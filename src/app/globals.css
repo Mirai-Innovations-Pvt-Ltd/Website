@@ -1,0 +1,2070 @@
+@import "tailwindcss";
+
+/* ============================================================
+   ARCHITECTURE NOTE
+
+   This stylesheet is the prototype's hand-tuned design system,
+   preserved verbatim as the visual source of truth. Values here
+   (clamp() type scale, color-mix() hover derivation, masked
+   atmosphere layers, theme overrides that depend on rule order)
+   are exact and intent-documented — transcribing them into
+   utility classes would be pure fidelity risk with no gain.
+
+   Tailwind v4 is fully integrated on top: preflight + utilities
+   are available (and used for net-new structural styling). These
+   rules are intentionally unlayered so they always win over
+   Tailwind's layered base styles.
+
+   Font stacks are the one edit vs. the prototype: families are
+   self-hosted through next/font (see src/app/layout.tsx), which
+   exposes them as CSS variables consumed below.
+   ============================================================ */
+
+/* ============================================
+   DESIGN TOKENS
+
+   Gradient budget is spent in exactly two places
+   in this entire file: the nav-mark accent dot,
+   and the primary CTA. Nowhere else. (§7.3)
+
+   Canvas stays light throughout — the Hero is LIGHT
+   per §7.2's explicit section map. Atmosphere below
+   is built from neutral tone, shadow, and texture,
+   never from the accent gradient or a dark background.
+   ============================================ */
+:root {
+  --color-canvas: #FAFAF9;
+  --color-ink: #121319;
+  --color-ink-soft: #3A3C44;
+  --color-ink-muted: #6B6D76;
+  --color-line: #E2E1DA;
+  --color-canvas-raised: #F2F1EC;
+
+  --color-device: #0C0D11;
+  --color-device-line: rgba(255, 255, 255, 0.14);
+  --color-device-text: #E8E8EC;
+
+  /* Gradient stops as separate variables, so the hover
+     state can be derived systematically via color-mix()
+     instead of hand-picked as a second gradient that has
+     to be remembered and kept in sync manually. */
+  --accent-1: #4A3FD8;
+  --accent-2: #17A6C9;
+  --gradient-accent: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%);
+  --gradient-accent-hover: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-1) 85%, black) 0%,
+    color-mix(in srgb, var(--accent-2) 85%, black) 100%
+  );
+  --color-focus: #3452E1;
+
+  --font-display: var(--font-space-grotesk), "Helvetica Neue", Arial, sans-serif;
+  --font-body: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "SF Mono", Menlo, monospace;
+
+  /* Named tracking scale — replaces six previously
+     scattered, near-identical letter-spacing values with
+     four deliberate, reusable steps. */
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.015em;
+  --tracking-normal: -0.008em;
+  --tracking-wide: 0.05em;
+
+  /* ============================================
+     MOTION
+     Phase 1 motion, added on the founder's explicit
+     request (previously deferred per §7.2's Phase 1/2
+     split). Scope: hover, focus, active, and JS-driven
+     state changes only — never a scroll-triggered reveal
+     that hides content until scrolled into view. That
+     specific pattern remains off-limits regardless of who
+     authorizes motion generally: §7.6 forbids "animation
+     that delays first paint or hides content until
+     scroll" as a standalone rule, not tied to the phase
+     scoping. Every transition below respects
+     prefers-reduced-motion via the existing guard.
+     ============================================ */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 140ms;
+  --duration-base: 200ms;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-9: 6rem;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --container-max: 1360px;
+  --container-pad: clamp(1.5rem, 5vw, 4rem);
+
+  --dropdown-shadow: 0 10px 28px rgba(18, 19, 25, 0.12);
+  --atmosphere-glow-alpha: 0.92;
+  --atmosphere-fill-alpha: 0.5;
+  --noise-blend: multiply;
+}
+
+/* ============================================
+   DARK MODE
+
+   Light is the default regardless of system preference —
+   only the explicit [data-theme="dark"] override (set by
+   the toggle button) switches to dark. This was previously
+   also auto-triggered by prefers-color-scheme; that path
+   is intentionally removed so the site always opens light
+   on first visit, and dark is purely an opt-in choice.
+
+   Design intent carried over from light mode: the product
+   panel must stay meaningfully darker than the canvas
+   around it in BOTH themes — that relative contrast is
+   what "the page becomes the device" (§7.2) actually
+   depends on, not any single absolute color value. So
+   --color-device drops even further below --color-canvas
+   here than the light-mode gap was.
+   ============================================ */
+
+[data-theme="dark"] {
+  --color-canvas: #0B0C0F;
+  --color-ink: #F4F3EF;
+  --color-ink-soft: #C9C8C2;
+  --color-ink-muted: #8D8F98;
+  --color-line: rgba(255, 255, 255, 0.11);
+  --color-canvas-raised: #1D1E23;
+  --color-device: #030405;
+  --color-focus: #7C8CFF;
+
+  --dropdown-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --atmosphere-glow-alpha: 0.045;
+  --atmosphere-fill-alpha: 0.03;
+  --noise-blend: overlay;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+/* Sticky header covers ~64-72px — without this, jumping to
+   #product / #behind-the-build / #team lands the section
+   heading right at the very top of the viewport, hidden
+   underneath the fixed nav. */
+#product,
+#behind-the-build,
+#team {
+  scroll-margin-top: 88px;
+}
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; }
+button { font: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* Defensive guard — no motion exists in this file today,
+   but this is the standard baseline so any future
+   transition added downstream inherits the safety net by
+   default rather than by someone remembering to add it. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+@media print {
+  .hero-atmosphere, .hero-fill-light, .hero-noise { display: none; }
+  .btn-primary { box-shadow: none; }
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  padding: var(--space-3) var(--space-5);
+  z-index: 100;
+  font-weight: 600;
+  text-decoration: none;
+}
+.skip-link:focus { left: 0; }
+
+/* Visually hidden but announced to assistive tech —
+   used where a heading is structurally required for the
+   accessibility tree but a duplicate visible label would
+   compete with the copy immediately below it. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-pad);
+}
+
+/* ============================================
+   ATMOSPHERE LAYER
+   Technical grid + soft radial light + fine noise —
+   all in neutral/monochrome tone. No accent-gradient
+   glow, no backdrop-filter/glassmorphism (§7.6 forbids
+   this explicitly). Depth comes from tone and texture,
+   not from color or blur.
+   ============================================ */
+.hero {
+  position: relative;
+  padding-block: var(--space-9) var(--space-9);
+  overflow: hidden;
+}
+
+.hero-atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Hairline technical grid — dialed to the edge of
+   perceptibility. A senior pass here is subtraction:
+   the grid should register as texture, not pattern. */
+.hero-atmosphere::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--color-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: 0.32;
+  mask-image: radial-gradient(ellipse 78% 58% at 68% 32%, black 15%, transparent 72%);
+}
+
+/* Two soft radial fills, not one — a key light behind
+   the product panel and a much fainter fill light over
+   the content column, so the whole hero reads as one
+   lit scene rather than a light source that only
+   belongs to the right half. Alpha is theme-aware: a
+   bright white glow that reads as "studio light" on a
+   light canvas would blow out against a dark one, so
+   dark mode dims it to a faint rim instead. */
+.hero-atmosphere::after {
+  content: "";
+  position: absolute;
+  top: -12%;
+  right: -8%;
+  width: 58%;
+  height: 92%;
+  background:
+    radial-gradient(closest-side, rgba(255,255,255,var(--atmosphere-glow-alpha)), rgba(255,255,255,0) 70%);
+}
+
+.hero-fill-light {
+  position: absolute;
+  top: 10%;
+  left: -6%;
+  width: 34%;
+  height: 60%;
+  background: radial-gradient(closest-side, rgba(255,255,255,var(--atmosphere-fill-alpha)), rgba(255,255,255,0) 75%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Fine noise texture — static, not animated. Blend mode
+   switches from multiply (darkens against a light canvas)
+   to overlay (correct behavior against a dark one) — the
+   same "multiply" mode against a near-black canvas would
+   barely register instead of adding texture. */
+.hero-noise {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0.035;
+  pointer-events: none;
+  mix-blend-mode: var(--noise-blend);
+}
+
+/* ============================================
+   HEADER / NAV
+   ============================================ */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--color-line);
+  background: rgba(250, 250, 249, 0.72);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+
+[data-theme="dark"] .site-header {
+  background: rgba(10, 11, 14, 0.68);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding-block: var(--space-4);
+}
+
+.nav-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1875rem;
+  letter-spacing: var(--tracking-normal);
+  text-decoration: none;
+  color: var(--color-ink);
+}
+
+/* One of two total uses of the accent gradient sitewide (§7.3).
+   Nudged up 1px relative to the text baseline — a small dot
+   next to capital-height text optically wants to sit slightly
+   above center, not dead-center, to feel anchored rather than
+   sunken. */
+.nav-mark-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gradient-accent);
+  flex-shrink: 0;
+  transform: translateY(-1px);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  transition: color var(--duration-base) var(--ease-standard), border-color var(--duration-base) var(--ease-standard);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--color-ink-soft);
+}
+.nav-links a:hover,
+.nav-links a:focus-visible { color: var(--color-ink); }
+
+/* Native <details> disclosure — no JS, keyboard-operable
+   out of the box, no custom animation. This replaces a
+   mobile nav that previously vanished with zero
+   alternative path to Product / Behind the Build / Team. */
+.nav-menu {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .nav-links { display: none; }
+  .nav-menu { display: block; position: relative; }
+}
+
+.nav-menu summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  padding: 0.5rem 0.25rem;
+}
+.nav-menu summary::-webkit-details-marker { display: none; }
+.nav-menu summary:hover,
+.nav-menu summary:focus-visible { color: var(--color-ink); }
+
+.nav-menu[open] summary { color: var(--color-ink); }
+
+.nav-menu-panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 12rem;
+  padding: var(--space-4);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--dropdown-shadow);
+}
+
+.nav-menu-panel a {
+  transition: color var(--duration-base) var(--ease-standard), border-color var(--duration-base) var(--ease-standard);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--color-ink-soft);
+}
+.nav-menu-panel a:hover,
+.nav-menu-panel a:focus-visible { color: var(--color-ink); }
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* Theme toggle — icon-only, sun/moon. Which icon is
+   visible is decided purely by CSS (matching the current
+   theme state), the button just flips [data-theme]. No
+   transition/animation on the swap; it's instant, same as
+   every other state change in this file. */
+.theme-toggle {
+  transition: color var(--duration-base) var(--ease-standard), border-color var(--duration-base) var(--ease-standard);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+}
+.theme-toggle:hover { color: var(--color-ink); border-color: var(--color-ink-muted); }
+
+.theme-toggle { position: relative; }
+
+.theme-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  opacity: 1;
+  transition:
+    opacity var(--duration-base) var(--ease-standard),
+    transform var(--duration-base) var(--ease-standard);
+}
+.theme-icon--moon { fill: currentColor; stroke: none; }
+
+/* Default (light theme, no override): moon visible, sun
+   hidden (click to go dark). Both icons stay in the DOM
+   and in normal flow via absolute positioning, so the
+   swap can crossfade instead of snapping via display. */
+.theme-icon--sun {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5) rotate(-45deg);
+}
+
+[data-theme="dark"] .theme-icon--moon {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5) rotate(45deg);
+}
+[data-theme="dark"] .theme-icon--sun {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+}
+[data-theme="light"] .theme-icon--moon {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+}
+[data-theme="light"] .theme-icon--sun {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5) rotate(-45deg);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.625rem;
+  border-radius: var(--radius-md);
+  background: var(--gradient-accent);
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  letter-spacing: var(--tracking-normal);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 1px 2px rgba(18, 19, 25, 0.08),
+    0 6px 16px -4px rgba(74, 63, 216, 0.28);
+  transition:
+    background var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+.btn-primary:hover {
+  background: var(--gradient-accent-hover);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 1px 2px rgba(18, 19, 25, 0.08),
+    0 10px 22px -4px rgba(74, 63, 216, 0.36);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.18),
+    0 1px 2px rgba(18, 19, 25, 0.08);
+}
+
+/* ============================================
+   HERO GRID
+   Three tracks: a narrow editorial index column,
+   the content column, and the product column —
+   deliberately unequal, not a 50/50 split. This is
+   the asymmetry the composition is built on.
+   ============================================ */
+.hero-inner {
+  position: relative;
+  z-index: 2;
+  display: block;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Rhythm through unequal gaps, not one repeated value —
+   elements that belong together sit closer than elements
+   that mark a real break in the reading path. The kicker
+   sits noticeably apart from the headline (space-6) so the
+   eye registers it as a label, not a first line of the
+   headline itself — then headline-to-subhead tightens
+   (space-4) since those two read as one continuous thought,
+   before the widest gap (space-8) opens before the CTA,
+   which needs to feel like a deliberate, separate beat. */
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-line);
+  margin-top: 0; /* zero the UA default <p> margin so this
+    lines up exactly with the video's top edge, rather than
+    sitting 12px lower than it */
+  margin-bottom: var(--space-6);
+}
+
+/* Two-weight headline: hierarchy through contrast in
+   weight and color, not through oversized scale.
+   Ceiling stays well below the 96px the brief corrected
+   away from — the drama comes from rhythm, not size. */
+.hero-heading {
+  margin: 0 0 var(--space-6);
+  font-family: var(--font-display);
+  /* Fixed rem value instead of ch — ch resolves against
+     THIS element's own font-size, which is never set here
+     (it inherits body's 16px), not the much larger size
+     actually rendered by the child spans below. The
+     previous 15ch was computing against the wrong font
+     size and silently over-constraining the whole heading.
+     Widened further still — at 42rem the headline was
+     wrapping into four short, stacked lines; at this
+     measure it settles into two wide lines that actually
+     use the column's horizontal room. */
+  max-width: 50rem;
+}
+
+.hero-heading .line-soft {
+  display: block;
+  font-weight: 400;
+  color: var(--color-ink-soft);
+  font-size: clamp(1.75rem, 1.2rem + 2.1vw, 2.75rem);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-normal);
+}
+
+.hero-heading .line-strong {
+  display: block;
+  font-weight: 600;
+  color: var(--color-ink);
+  /* Pulled the ceiling back from 3.4rem — paired with the
+     wider max-width above, a smaller size is what actually
+     lets the line break wide (two lines) instead of tall
+     (four lines); a bigger size alone just re-wraps sooner. */
+  font-size: clamp(1.9rem, 1.3rem + 2.1vw, 3rem);
+  line-height: 1.16;
+  letter-spacing: var(--tracking-tight);
+  margin-top: 0.18em;
+  text-wrap: balance;
+}
+
+/* Fluid like every other text element in the file — this
+   was previously the one static size, an inconsistency in
+   an otherwise fully fluid type system. Widened alongside
+   the headline so the line length grows with it instead of
+   wrapping much narrower than the text above it. */
+.hero-subhead {
+  margin: 0 0 var(--space-9);
+  font-size: clamp(1rem, 0.92rem + 0.35vw, 1.125rem);
+  line-height: 1.65;
+  color: var(--color-ink-muted);
+  max-width: 40rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.hero-actions-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  color: var(--color-ink-muted);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 480px) {
+  .hero-actions { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+}
+
+/* ============================================
+   HERO CREDENTIALS
+   §5.7: the site's only third-party validation.
+   Deliberately understated — smaller type, no card
+   containers, no badge styling, no separate section of
+   its own. Lives inside the Hero, directly under the CTA
+   note, so it reads as part of the same opening statement
+   ("no pricing, no waitlist — and DPIIT-recognised") rather
+   than a separate institutional banner bolted on below it.
+   ============================================ */
+.hero-credentials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-line);
+  /* Pushes this row to the bottom of the (row-height)
+     content column via leftover flex space, so it lands
+     level with "Mirai Layer, on the shop floor" under the
+     video — the two natural stopping points on either side
+     of the Hero. */
+  margin-top: auto;
+}
+
+/* Plain content, no button/card read at all — icon + text
+   pairing only, colored the same muted tone as the hero
+   subhead so it sits quietly under the CTA instead of
+   competing with it. */
+.credential-item {
+  transition: color var(--duration-base) var(--ease-standard);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: var(--color-ink-muted);
+}
+
+a.credential-item:hover,
+a.credential-item:focus-visible {
+  color: var(--color-ink);
+}
+a.credential-item:hover .credential-logo,
+a.credential-item:focus-visible .credential-logo {
+  border-color: var(--color-ink-muted);
+}
+
+/* Logo slots — reserved at fixed dimensions per §5.5's
+   "reserve the slot" principle, same as the Hero's video
+   panel. Real DPIIT recognition mark and V-Nest incubation
+   crest, rendered greyscale / single-colour per §5.7 so
+   each institution's own brand colours (navy/magenta,
+   red/black) never compete with the page. */
+.credential-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas);
+  overflow: hidden;
+  transition: border-color var(--duration-base) var(--ease-standard);
+}
+
+.credential-logo img {
+  width: 68%;
+  height: 68%;
+  object-fit: contain;
+  filter: grayscale(1) contrast(1.05);
+  opacity: 0.75;
+}
+
+.credential-text {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  letter-spacing: var(--tracking-normal);
+}
+
+.credential-divider {
+  align-self: center;
+  width: 1px;
+  height: 1.25rem;
+  background: var(--color-line);
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .hero-credentials {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+  .credential-divider { display: none; }
+}
+
+/* ============================================
+   HERO SLIDESHOW (full-bleed backdrop)
+   Second pass on the founder's direction: the three in-situ
+   photographs are no longer a framed block under the copy —
+   they ARE the hero's backdrop, edge to edge behind the
+   content (reference: XELA-style hero). The hero copy
+   overlays the photograph above a bottom-weighted scrim,
+   rendered in the fixed light "device text" palette in BOTH
+   themes — the same theme-independence rationale as the
+   Product Band surface. Controls keep the device-chrome
+   vocabulary; autoplay, hover/focus pause, and the
+   reduced-motion behavior are unchanged from the first
+   pass (fade collapses to an instant swap via the global
+   guard; autoplay is disabled in the component).
+   ============================================ */
+
+/* The hero becomes a bottom-anchored stage: the backdrop is
+   absolute, the content container is the one flex child. The
+   original padding-block still provides the text's breathing
+   room; min-height gives the photograph its presence (svh
+   line overrides vh where supported). */
+.hero {
+  display: flex;
+  align-items: flex-end;
+  min-height: clamp(34rem, 88vh, 50rem);
+  min-height: clamp(34rem, 88svh, 50rem);
+}
+
+/* Sits above the atmosphere layers and the noise (same
+   z-index as the noise but later in the DOM, so it paints
+   over it); the content column (.hero-inner, z-index 2)
+   stays on top. */
+.hero-slideshow {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--color-device);
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms var(--ease-standard);
+}
+
+.hero-slide--active {
+  opacity: 1;
+}
+
+.hero-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Bottom-weighted + left-biased scrim in the device black,
+   so the overlaid copy always clears WCAG contrast no matter
+   which photograph is behind it. */
+.hero-slideshow-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(to top, rgba(5, 6, 8, 0.74) 0%, rgba(5, 6, 8, 0.36) 42%, rgba(5, 6, 8, 0.10) 72%, rgba(5, 6, 8, 0) 100%),
+    linear-gradient(to right, rgba(5, 6, 8, 0.32) 0%, rgba(5, 6, 8, 0) 55%);
+}
+
+/* One quiet cluster, bottom-right, aligned to the container
+   padding so it shares a margin with the content column:
+   [prev] [dots] [next]. */
+.hero-slideshow-controls {
+  position: absolute;
+  right: var(--container-pad);
+  bottom: var(--space-5);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.hero-slideshow-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(12, 13, 17, 0.45);
+  color: #FFFFFF;
+  cursor: pointer;
+  transition:
+    background var(--duration-base) var(--ease-standard),
+    border-color var(--duration-base) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.hero-slideshow-arrow:hover {
+  background: rgba(12, 13, 17, 0.65);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.hero-slideshow-arrow:active {
+  transform: scale(0.94);
+}
+
+.hero-slideshow-arrow svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hero-slideshow-dots {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.hero-slideshow-dot {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: var(--space-2);
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.hero-slideshow-dot span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.38);
+  transition:
+    background var(--duration-base) var(--ease-standard),
+    transform var(--duration-base) var(--ease-standard);
+}
+
+.hero-slideshow-dot:hover span {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.hero-slideshow-dot[aria-pressed="true"] span {
+  background: #FFFFFF;
+  transform: scale(1.15);
+}
+
+/* ---- Overlay text treatment ----
+   The hero copy now sits on a photograph, so its ink tones
+   flip to the fixed light device-text family — literal
+   values, not theme tokens, because the overlay must read
+   identically in light and dark mode (the photo doesn't
+   flip). Selectors repeat the originals and simply win by
+   order. Pointer events pass through the text layer so
+   hovering the photograph pauses the slideshow; links
+   re-enable themselves. */
+.hero-inner {
+  pointer-events: none;
+}
+
+.hero-inner a {
+  pointer-events: auto;
+}
+
+.hero .hero-kicker {
+  color: rgba(232, 232, 236, 0.68);
+  border-bottom-color: rgba(255, 255, 255, 0.28);
+}
+
+.hero-heading .line-soft {
+  color: rgba(232, 232, 236, 0.82);
+}
+
+.hero-heading .line-strong {
+  color: #FFFFFF;
+}
+
+.hero-subhead {
+  color: rgba(232, 232, 236, 0.74);
+}
+
+.hero-actions-note {
+  color: rgba(232, 232, 236, 0.66);
+}
+
+.hero-credentials {
+  border-top-color: rgba(255, 255, 255, 0.24);
+}
+
+.hero .credential-item {
+  color: rgba(232, 232, 236, 0.68);
+}
+
+a.credential-item:hover,
+a.credential-item:focus-visible {
+  color: #FFFFFF;
+}
+
+a.credential-item:hover .credential-logo,
+a.credential-item:focus-visible .credential-logo {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Fixed light chip in both themes so the greyscale marks
+   stay visible over the photograph. */
+.credential-logo {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: #FAFAF9;
+}
+
+.credential-divider {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* ============================================
+   PRODUCT BAND
+   §7.2 / §5.1: the dark zone housing the screen
+   recording, interactive selector, and screenshots as
+   one continuous surface — not three separate dark
+   sections stacked with gaps. Background matches
+   --color-device deliberately: this band and the
+   device chrome are meant to read as the same surface,
+   which is the literal mechanism behind "the page
+   becomes the device."
+   ============================================ */
+.product-band {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  padding-top: 0;
+  padding-bottom: var(--space-9);
+  /* border-top moved to .recording-row so the separator sits
+     immediately above "Captured from the running application."
+     rather than floating at the very top of the section */
+}
+
+.product-band-label {
+  font-size: 0.75rem;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin: 0 0 var(--space-8);
+}
+
+/* ---- 3A: Screen Recording ----
+   Two-column composition: the lead statement and caption
+   on the left, the video on the right — mirrors the Hero's
+   own text/video split rather than stacking everything in
+   one centered column. */
+.recording-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: var(--space-9);
+  align-items: start;
+  /* Thin separator line that sits directly above
+     "Captured from the running application." — moved here
+     from .product-band so the line is flush with the content
+     rather than floating at the top of an 8rem empty zone.
+     Padding-top preserves the original vertical breathing room. */
+  border-top: 1px solid var(--color-line);
+  padding-top: calc(var(--space-9) + var(--space-6));
+}
+
+.recording-video-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.recording-video {
+  position: relative;
+  margin: 0;
+  width: 100%;
+  max-width: 26rem;
+  /* Was 27 / 32 while the slot sat empty. The real recording
+     landed at 630×1138 native, and the §5.1a DEV NOTE is explicit
+     that its portrait ratio is preserved exactly — no letterbox,
+     no crop — so the frame now carries the footage's own ratio. */
+  aspect-ratio: 630 / 1138;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  box-shadow: 0 32px 64px -32px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(120% 90% at 50% 15%, rgba(255,255,255,0.05), transparent 60%),
+    var(--color-device);
+}
+
+/* The embedded recording fills the frame; the frame's own
+   aspect-ratio matches the footage exactly, so cover neither
+   crops nor distorts. Corner ticks and the spec readout are
+   later siblings, so they paint above the footage. */
+.recording-video video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.recording-video .video-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--color-device-line);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  transition: transform var(--duration-base) var(--ease-standard), background var(--duration-base) var(--ease-standard);
+}
+
+.recording-video:hover .video-play {
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.recording-video .video-play svg {
+  width: 1.0625rem;
+  height: 1.0625rem;
+  fill: var(--color-device-text);
+  margin-left: 2px;
+}
+
+.recording-video .video-corner {
+  position: absolute;
+  width: var(--space-4);
+  height: var(--space-4);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+.recording-video .video-corner--tl { top: var(--space-4); left: var(--space-4); border-right: none; border-bottom: none; }
+.recording-video .video-corner--br { bottom: var(--space-4); right: var(--space-4); border-left: none; border-top: none; }
+
+.recording-video .video-spec {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-device-text);
+  opacity: 0.65;
+}
+
+.recording-text {
+  max-width: 32rem;
+  text-align: left;
+}
+
+/* Was intentionally the same typographic tier as
+   .retailer-lead ("Fewer walkouts from indecision.") — that
+   one was later sized up on its own, so this is now the
+   smaller of the two. Left as-is since only the retailer
+   stat was asked to be bigger. */
+.recording-lead {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.5rem, 1.2rem + 1.3vw, 2.125rem);
+  line-height: 1.25;
+  letter-spacing: var(--tracking-normal);
+  color: var(--color-ink);
+  /* Widened from space-5 — the gap to the caption below read
+     as too tight for a heading/subheading pairing. */
+  margin: 0 0 var(--space-7);
+}
+
+.recording-caption {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--color-ink-muted);
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .recording-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-7);
+  }
+  .recording-video-wrap {
+    justify-content: center;
+  }
+  .recording-text {
+    text-align: center;
+    max-width: none;
+    margin-inline: auto;
+  }
+}
+
+/* ---- 3B: Interactive Selector ----
+   §5.1b: "the most important component on the site."
+   Gets the most generous space of anything in the file.
+   Fully data-driven (see src/data/vton.ts) — the 9
+   combinations are never hardcoded as separate markup
+   blocks, so expanding the matrix later is a data change,
+   not a rebuild (§5.1b's own Phase 2 readiness
+   requirement). */
+.selector {
+  padding-top: var(--space-9);
+  padding-bottom: var(--space-3);
+  border-top: 1px solid var(--color-line);
+}
+
+.selector-header {
+  margin-bottom: var(--space-7);
+}
+
+.selector-label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.125rem);
+  letter-spacing: var(--tracking-normal);
+  text-transform: none;
+  color: var(--color-ink);
+  margin: 0 0 var(--space-4);
+}
+
+/* Mandatory, persistent disclosure (§5.1b) — not a
+   tooltip, not a one-time modal. It stays on screen for
+   as long as the component is visible, because nothing
+   here may imply real-time generation for arbitrary
+   uploads. */
+.selector-disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.8125rem;
+  color: var(--color-ink-muted);
+  padding: 0.4em 0.75em;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+}
+.selector-disclosure::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-ink-muted);
+  flex-shrink: 0;
+}
+
+/* Gender toggle — two discrete, mutually exclusive
+   sections, never a combined filter (§5.1b, explicit:
+   "simpler to build, and no nonsensical combinations"). */
+.gender-toggle {
+  display: inline-flex;
+  align-self: flex-start; /* prevents flex stretch — wraps to button content width only */
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  margin-top: 0;
+}
+
+.gender-toggle button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--color-ink-muted);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1.125rem;
+  border-radius: calc(var(--radius-md) - 3px);
+  cursor: pointer;
+  transition: background var(--duration-base) var(--ease-standard), color var(--duration-base) var(--ease-standard);
+}
+
+.gender-toggle button[aria-pressed="true"] {
+  background: var(--color-canvas-raised);
+  color: var(--color-ink);
+}
+
+/* Two-column composition: controls on the left (the
+   inputs), the result frame on the right (the payoff) —
+   mirrors the natural left-to-right "choose, then see the
+   result" reading order instead of stacking everything in
+   one centered column. */
+.selector-body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.54fr) minmax(0, 0.46fr);
+  gap: var(--space-7);
+  align-items: start;
+}
+
+.selector-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  width: 100%;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.control-group h3 {
+  font-size: 0.6875rem;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin: 0 0 var(--space-4);
+  font-weight: 500;
+}
+
+.thumbnail-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+/* One flexible pattern, reused for both subjects and
+   garments — same class handles both, since both are
+   fundamentally "pick one of several visual options."
+   No real photography exists yet, so these are labeled
+   reserved slots, not fabricated placeholder imagery.
+   Sized up from the previous pass (3.5rem) — this is the
+   component the file's own comments call the most
+   important on the site, so it should feel substantial to
+   tap, not like a secondary filter control. Hover and
+   active states are now distinct gestures: hover lifts and
+   brightens the border to invite the tap; the pressed
+   state adds a soft glow ring so the current selection
+   reads unambiguously at a glance, not just via a slightly
+   different grey. */
+.thumbnail {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10.5rem;
+  height: 10.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas-raised);
+  color: var(--color-ink-muted);
+  font-size: 1.125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--duration-base) var(--ease-standard),
+    border-color var(--duration-base) var(--ease-standard),
+    color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.thumbnail:hover {
+  border-color: var(--color-ink-muted);
+  background: var(--color-canvas-raised);
+  color: var(--color-ink);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -16px rgba(18, 19, 25, 0.25);
+}
+
+.thumbnail:active { transform: scale(0.94) translateY(0); }
+
+.thumbnail[aria-pressed="true"] {
+  border-color: var(--color-ink);
+  background: var(--color-canvas-raised);
+  color: var(--color-ink);
+  box-shadow: 0 0 0 3px rgba(18, 19, 25, 0.08);
+}
+.thumbnail[aria-pressed="true"]:hover {
+  transform: none;
+}
+
+/* Result display — framed inside the actual kiosk UI
+   chrome, not a plain photo swap. This is what makes the
+   result read as "the product interface" rather than a
+   lookbook image (§5.1b's own reasoning). */
+.result-frame {
+  position: relative;
+  margin: 0 0 0 auto;
+  width: 100%;
+  max-width: 26rem;
+  aspect-ratio: 27 / 32; /* was 9/16; height cut by 1/3 → 27:32 */
+  background:
+    radial-gradient(120% 90% at 50% 15%, rgba(255,255,255,0.05), transparent 60%),
+    #050608;
+  border-radius: var(--radius-md);
+  box-shadow: 0 32px 64px -32px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-5);
+}
+
+.result-frame-caption {
+  font-size: 0.8125rem;
+  color: rgba(232, 232, 236, 0.55);
+  line-height: 1.6;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.result-frame-caption strong {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  letter-spacing: 0;
+  color: var(--color-device-text);
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+}
+
+@media (max-width: 860px) {
+  .selector-body {
+    grid-template-columns: 1fr;
+  }
+  .result-frame {
+    margin-inline: auto;
+    max-width: 18rem;
+  }
+}
+
+/* ============================================
+   WHAT THE RETAILER GETS
+   §7.5's explicitly named anti-pattern is "three grey
+   rounded-corner cards in a row" — this section's content
+   (four short benefit statements) is exactly the shape
+   most likely to default into that. No card containers
+   anywhere here; hierarchy comes from unequal type scale
+   and unequal widths instead, per §6/§7.1.
+   ============================================ */
+.retailer {
+  padding-block: var(--space-9);
+}
+
+.retailer-lead {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.875rem, 1.4rem + 1.8vw, 2.75rem);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-normal);
+  color: var(--color-ink);
+  max-width: 28rem;
+  margin: 0 0 var(--space-8);
+}
+
+.retailer-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-7) var(--space-8);
+}
+
+.retailer-item {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--color-ink-muted);
+}
+
+/* Unequal widths, not equal thirds — the mechanism that
+   actually avoids the card-grid read. */
+.retailer-item:nth-child(1) { flex: 1 1 15rem; max-width: 17rem; }
+.retailer-item:nth-child(2) { flex: 1 1 12rem; max-width: 14rem; }
+.retailer-item:nth-child(3) { flex: 1 1 18rem; max-width: 20rem; }
+
+@media (max-width: 640px) {
+  .retailer-secondary { flex-direction: column; gap: var(--space-6); }
+  .retailer-item { max-width: none !important; }
+}
+
+/* ============================================
+   HOW IT WORKS
+   §4: the technology story is preserved but demoted —
+   "sits below the product," "written factually rather
+   than promotionally." This is the smallest heading in
+   the file and the most compact padding of any section —
+   both deliberate, not an oversight. No diagram: §7.6/§10
+   forbid stock or invented tech illustrations, and no real
+   schematic exists yet, so this stays text-only rather
+   than reaching for a generic AI-pipeline graphic.
+   ============================================ */
+.how-it-works {
+  padding-block: var(--space-8);
+  border-top: 1px solid var(--color-line);
+}
+
+.how-it-works-inner {
+  max-width: 34rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.how-it-works h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.25rem;
+  letter-spacing: var(--tracking-normal);
+  color: var(--color-ink);
+  margin: 0 0 var(--space-4);
+}
+
+.how-it-works p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-ink-muted);
+}
+
+/* ============================================
+   BEHIND THE BUILD
+   §8: "the most distinctive thing on the site" — the
+   section grant committees are named as finding most
+   persuasive. Same dark token as the Product Band
+   (--color-device) rather than a second dark tone, per
+   the earlier design-direction decision to keep one dark
+   surface language sitewide.
+   ============================================ */
+.behind-the-build {
+  background: var(--color-device);
+  color: var(--color-device-text);
+  padding-block: var(--space-9);
+}
+
+.btb-header {
+  margin-bottom: var(--space-8);
+  max-width: 34rem;
+}
+
+.btb-header h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.375rem;
+  color: var(--color-device-text);
+  margin: 0 0 var(--space-3);
+}
+
+.btb-header p {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: rgba(232, 232, 236, 0.6);
+}
+
+/* Dark-mode inversion: everywhere else, --color-device is a
+   fixed dark surface that doesn't flip with the theme — on
+   purpose, so the Product Band keeps reading as "the device"
+   in both modes. Behind the Build is the deliberate exception:
+   in dark mode it flips to a white surface, so it still reads
+   as a contrasting panel against the (now dark) canvas around
+   it — the same relationship light mode has, mirrored rather
+   than repeated. Colors below are literal, not theme tokens,
+   since --color-ink/--color-ink-muted are themselves flipped
+   to light values in dark mode and would go invisible on this
+   white surface. */
+[data-theme="dark"] .behind-the-build {
+  background: #FAFAF9;
+  color: #121319;
+}
+
+[data-theme="dark"] .btb-header h2 {
+  color: #121319;
+}
+
+[data-theme="dark"] .btb-header p {
+  color: rgba(18, 19, 25, 0.6);
+}
+
+[data-theme="dark"] .photowalk-item {
+  border-color: rgba(18, 19, 25, 0.16);
+  background: rgba(18, 19, 25, 0.03);
+}
+
+[data-theme="dark"] .photowalk-item:hover {
+  border-color: rgba(18, 19, 25, 0.32);
+  background: rgba(18, 19, 25, 0.05);
+  box-shadow: 0 24px 40px -20px rgba(18, 19, 25, 0.18);
+}
+
+[data-theme="dark"] .photowalk-item figcaption {
+  color: rgba(18, 19, 25, 0.6);
+}
+
+[data-theme="dark"] .photowalk-item:hover figcaption {
+  color: #121319;
+}
+
+/* ---- Photowalk ----
+   Reserved slots for real photography from the build —
+   hardware, install day, the team, the kiosk in situ.
+   Rounded corners (radius-lg) mark these deliberately as
+   PHOTOGRAPHS rather than interface captures — everywhere
+   else in the file that shows the product itself (video,
+   result frame, screenshots) is sharp-cornered on purpose,
+   so a photo gallery reads as a distinct, softer register:
+   documentary evidence of the build, not the product UI. */
+.photowalk-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 14rem;
+  grid-auto-flow: row dense;
+  gap: var(--space-4);
+}
+
+.photowalk-item {
+  position: relative;
+  margin: 0;
+  border-radius: var(--radius-lg);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--space-4);
+  transition:
+    border-color 320ms var(--ease-standard),
+    background 320ms var(--ease-standard),
+    transform 320ms var(--ease-standard),
+    box-shadow 320ms var(--ease-standard);
+}
+
+.photowalk-item:hover {
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.36);
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-6px);
+  box-shadow: 0 24px 40px -20px rgba(0, 0, 0, 0.55);
+}
+
+.photowalk-item figcaption {
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+  color: rgba(232, 232, 236, 0.65);
+  transition: transform 320ms var(--ease-standard), color 320ms var(--ease-standard);
+}
+
+.photowalk-item:hover figcaption {
+  transform: translateY(-2px);
+  color: var(--color-device-text);
+}
+
+.photowalk-item--wide {
+  grid-column: span 3;
+}
+
+@media (max-width: 860px) {
+  .photowalk-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 12rem;
+  }
+  .photowalk-item--wide {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 560px) {
+  .photowalk-grid {
+    grid-template-columns: 1fr;
+  }
+  .photowalk-item--wide {
+    grid-column: span 1;
+  }
+}
+
+/* ---- Photowalk: filled slots ----
+   The real photographs landed (§8): each tile now carries an
+   image that fills its frame (cover inside the fixed grid rows —
+   no distortion), with the caption riding a bottom scrim.
+   Caption ink is photo-relative — fixed light in BOTH themes,
+   like the hero overlay and the device chrome — because it sits
+   on the photograph, not on the section surface; this
+   deliberately overrides the section's dark-mode inversion for
+   these tiles. The dashed→solid border gesture and hover lift
+   are unchanged. */
+.photowalk-item img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photowalk-item--photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(5, 6, 8, 0.66) 0%, rgba(5, 6, 8, 0.22) 42%, rgba(5, 6, 8, 0) 68%);
+  pointer-events: none;
+}
+
+.photowalk-item--photo figcaption {
+  position: relative;
+  z-index: 1;
+  color: rgba(244, 243, 239, 0.88);
+}
+
+.photowalk-item--photo:hover figcaption {
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .photowalk-item--photo figcaption {
+  color: rgba(244, 243, 239, 0.88);
+}
+
+[data-theme="dark"] .photowalk-item--photo:hover figcaption {
+  color: #FFFFFF;
+}
+
+/* ============================================
+   TEAM
+   §5.2 / §2 Criterion 3: the direct answer to "authentic
+   founder and core team information... verifiable via
+   active, third-party public links." Group photo leads
+   (§5.2, explicit), then four EQUAL-weight profiles — unlike
+   Retailer Benefits, uniform treatment is correct here:
+   four real people presented with equal visual respect,
+   not four abstract claims defaulting to a template.
+   ============================================ */
+.team {
+  padding-block: var(--space-9);
+}
+
+.team-header h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: var(--color-ink);
+  margin: 0 0 var(--space-7);
+}
+
+.team-group-photo {
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  background: var(--color-canvas-raised);
+  border: 1px dashed var(--color-line);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-8);
+}
+
+.team-group-photo-label {
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-6);
+}
+
+.team-card {
+  transition: transform 320ms var(--ease-standard);
+}
+
+.team-card:hover {
+  transform: translateY(-4px);
+}
+
+.team-photo {
+  aspect-ratio: 1;
+  background: var(--color-canvas-raised);
+  border: 1px dashed var(--color-line);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+  transition:
+    border-color 320ms var(--ease-standard),
+    box-shadow 320ms var(--ease-standard);
+}
+
+.team-card:hover .team-photo {
+  border-style: solid;
+  border-color: var(--color-ink-muted);
+  box-shadow: 0 16px 32px -20px rgba(18, 19, 25, 0.35);
+}
+
+.team-photo span {
+  font-size: 0.6875rem;
+  color: var(--color-ink-muted);
+  transition: transform 320ms var(--ease-standard);
+  display: inline-block;
+}
+
+/* Reserved-slot placeholder "zooms" the same way a real
+   photo would on hover — so the interaction is already
+   correct once the real photography drops in; nothing to
+   re-tune later. */
+.team-card:hover .team-photo span {
+  transform: scale(1.08);
+}
+
+.team-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-ink);
+  margin: 0 0 0.15rem;
+}
+
+.team-role {
+  font-size: 0.875rem;
+  color: var(--color-ink-muted);
+  margin: 0 0 var(--space-3);
+}
+
+/* Deliberately unambiguous — this link carries real
+   compliance weight (§2's "verifiable via active,
+   third-party public links"), so it needs to read as
+   obviously clickable, not a subtle icon easy to miss. */
+.team-linkedin {
+  transition:
+    color 260ms var(--ease-standard),
+    border-color 260ms var(--ease-standard);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-ink-soft);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 2px;
+}
+.team-linkedin:hover,
+.team-linkedin:focus-visible {
+  color: var(--color-ink);
+  border-color: var(--color-ink-muted);
+}
+.team-linkedin svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  transition: transform 260ms var(--ease-standard);
+}
+.team-linkedin:hover svg,
+.team-linkedin:focus-visible svg {
+  transform: translateX(2px);
+}
+
+@media (max-width: 780px) {
+  .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .team-group-photo { aspect-ratio: 4 / 3; }
+}
+
+@media (max-width: 480px) {
+  .team-grid { grid-template-columns: 1fr; }
+}
+
+/* ---- Team: founder headshots (filled slots) ----
+   The individual card photos landed. The frame keeps the card's
+   exact 1:1 geometry and chrome; the photograph covers it and
+   inherits the hover zoom the prototype pre-tuned on the
+   placeholder ("the interaction is already correct once the real
+   photography drops in"). */
+.team-photo--photo {
+  position: relative;
+}
+
+.team-photo--photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 320ms var(--ease-standard);
+}
+
+.team-card:hover .team-photo--photo img {
+  transform: scale(1.08);
+}
+
+/* ---- Team: founders' group photograph (filled slot) ----
+   The §5.2 group photo landed. The frame keeps the prototype's
+   exact geometry (21/9, 4/3 under 780px) and chrome; the
+   photograph covers it, positioned high (object-position 34%)
+   so the founders' faces sit inside the wide crop. */
+.team-group-photo--photo {
+  position: relative;
+  overflow: hidden;
+}
+
+.team-group-photo--photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 34%;
+}
+
+/* ============================================
+   CONTACT + FOOTER
+   §5.4: single sitewide CTA, reused here as the actual
+   form submit — same Button/Primary component as Hero
+   and nav. §5.3: full legal footer, present on every
+   page (this file only has one page, but the footer is
+   still built as a visually self-contained block so it
+   could be lifted into a shared component later without
+   rework).
+   ============================================ */
+.contact {
+  padding-block: var(--space-9);
+}
+
+.contact-inner h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.75rem;
+  color: var(--color-ink);
+  margin: 0 0 var(--space-6);
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 30rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.form-field label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-ink-soft);
+}
+
+.form-field input,
+.form-field textarea {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--color-ink);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+  transition: border-color var(--duration-base) var(--ease-standard), outline-offset var(--duration-fast) var(--ease-standard);
+}
+
+.form-field input:focus-visible,
+.form-field textarea:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: 7rem;
+}
+
+.contact-note {
+  font-size: 0.8125rem;
+  color: var(--color-ink-muted);
+  margin: var(--space-2) 0 0;
+}
+
+.site-footer {
+  background: var(--color-canvas-raised);
+  border-top: 1px solid var(--color-line);
+  padding-block: var(--space-7);
+}
+
+.footer-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.85fr) minmax(0, 0.85fr);
+  gap: var(--space-7);
+  margin-bottom: var(--space-6);
+}
+
+.footer-columns h3 {
+  font-size: 0.6875rem;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin: 0 0 var(--space-3);
+  font-weight: 500;
+}
+
+/* The entity name is a name, not a utility category label
+   like "Contact" or "Legal" — it gets its own normal-case
+   treatment rather than the same all-caps tracked style. */
+.footer-entity-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-ink);
+  margin: 0 0 var(--space-3);
+}
+
+.footer-columns p,
+.footer-columns a {
+  transition: color var(--duration-base) var(--ease-standard), border-color var(--duration-base) var(--ease-standard);
+  display: block;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--color-ink-soft);
+  text-decoration: none;
+  margin: 0 0 0.35rem;
+}
+
+.footer-columns a:hover,
+.footer-columns a:focus-visible { color: var(--color-ink); }
+
+.footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-line);
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+}
+
+.footer-bottom-links {
+  display: flex;
+  gap: var(--space-5);
+}
+.footer-bottom-links a {
+  transition: color var(--duration-base) var(--ease-standard), border-color var(--duration-base) var(--ease-standard);
+  color: var(--color-ink-muted);
+  text-decoration: none;
+}
+.footer-bottom-links a:hover,
+.footer-bottom-links a:focus-visible { color: var(--color-ink); }
+
+@media (max-width: 780px) {
+  .footer-columns { grid-template-columns: 1fr; gap: var(--space-6); }
+  .footer-bottom { flex-direction: column; align-items: flex-start; }
+}
+
+/* ============================================
+   LEGAL PAGES (Privacy / Terms)
+   Not part of the original single-file prototype — its
+   footer links to /privacy and /terms, so these routes
+   exist as reserved-slot pages (the same "reserve the
+   slot, never fake the asset" pattern used sitewide)
+   instead of shipping dead links (§5.6). Replace the
+   reserved block with the real documents when legal
+   copy is finalised.
+   ============================================ */
+.legal-page {
+  padding-block: var(--space-9);
+}
+
+.legal-page h1 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.75rem;
+  letter-spacing: var(--tracking-normal);
+  color: var(--color-ink);
+  margin: 0 0 var(--space-6);
+}
+
+.legal-reserved {
+  max-width: 40rem;
+  padding: var(--space-6);
+  border: 1px dashed var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-canvas-raised);
+}
+
+.legal-reserved p {
+  margin: 0 0 var(--space-3);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--color-ink-muted);
+}
+
+.legal-reserved p:last-child { margin-bottom: 0; }
+
+.legal-reserved strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.legal-reserved a {
+  color: var(--color-ink-soft);
+  transition: color var(--duration-base) var(--ease-standard);
+}
+
+.legal-reserved a:hover,
+.legal-reserved a:focus-visible { color: var(--color-ink); }
