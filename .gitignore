@@ -28,7 +28,7 @@ yarn-error.log*
 !.env.example
 
 # user-local tooling config
-.claude/settings.local.json
+.claude/
 
 # vercel
 .vercel
