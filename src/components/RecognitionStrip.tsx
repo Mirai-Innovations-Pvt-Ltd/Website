@@ -23,8 +23,8 @@ const MARKS = [
   {
     src: "/images/startupindia-mark.png",
     alt: "#startupindia — Government of India, Ministry of Commerce and Industry",
-    width: 796,
-    height: 345,
+    width: 800,
+    height: 340,
   },
 ];
 
