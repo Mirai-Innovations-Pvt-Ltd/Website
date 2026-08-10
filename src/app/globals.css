@@ -46,19 +46,15 @@
   --color-device-line: rgba(255, 255, 255, 0.14);
   --color-device-text: #E8E8EC;
 
-  /* Gradient stops as separate variables, so the hover
-     state can be derived systematically via color-mix()
-     instead of hand-picked as a second gradient that has
-     to be remembered and kept in sync manually. */
-  --accent-1: #4A3FD8;
-  --accent-2: #17A6C9;
+  --accent-1: #8B5CF6;
+  --accent-2: #D946EF;
   --gradient-accent: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%);
   --gradient-accent-hover: linear-gradient(
     135deg,
     color-mix(in srgb, var(--accent-1) 85%, black) 0%,
     color-mix(in srgb, var(--accent-2) 85%, black) 100%
   );
-  --color-focus: #3452E1;
+  --color-focus: #8B5CF6;
 
   --font-display: var(--font-space-grotesk), "Helvetica Neue", Arial, sans-serif;
   --font-body: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
@@ -71,6 +67,44 @@
   --tracking-snug: -0.015em;
   --tracking-normal: -0.008em;
   --tracking-wide: 0.05em;
+
+  /* ============================================
+     TYPE SCALE
+
+     Three heading tiers, named rather than
+     re-derived per component. Before this, every
+     section invented its own size: the two lead
+     statements ran at 3rem and 2.75rem while the
+     section headings under them sat at 1.375rem
+     (Behind the Build), 1.5rem (Team) and 1.75rem
+     (Contact) — three near-identical values doing
+     the same job at three different weights, and a
+     gap so wide between tiers that the headings
+     read as captions rather than as titles.
+
+     --type-statement  the section's argument, set
+                       as a sentence (Product,
+                       Retailer)
+     --type-section    a section's name (Selector,
+                       Behind the Build, Team,
+                       Contact)
+     --type-minor      demoted headings that must
+                       NOT compete (How it works,
+                       legal pages)
+
+     Body copy keeps the 16px root; --type-lead is
+     the one step up, for a paragraph that carries a
+     statement rather than detail.
+     ============================================ */
+  /* Both fluid steps are tuned to stay UNDER the hero H1's own
+     clamp at every viewport width, not just at the endpoints —
+     the previous statement size overtook it between roughly
+     700px and 1100px, so the page's largest type was a section
+     heading rather than the H1. */
+  --type-statement: clamp(1.75rem, 1.15rem + 1.9vw, 2.75rem);
+  --type-section: clamp(1.5rem, 1.05rem + 1.2vw, 1.9375rem);
+  --type-minor: 1.25rem;
+  --type-lead: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
 
   /* ============================================
      MOTION
@@ -105,7 +139,7 @@
   --radius-lg: 16px;
 
   --container-max: 1360px;
-  --container-pad: clamp(1.5rem, 5vw, 4rem);
+  --container-pad: clamp(1.25rem, 3vw, 2.25rem);
 
   --dropdown-shadow: 0 10px 28px rgba(18, 19, 25, 0.12);
   --atmosphere-glow-alpha: 0.92;
@@ -341,7 +375,7 @@ button { font: inherit; }
   align-items: center;
   justify-content: space-between;
   gap: var(--space-5);
-  padding-block: var(--space-4);
+  padding-block: 0.625rem;
 }
 
 .nav-mark {
@@ -381,9 +415,11 @@ button { font: inherit; }
 .nav-links {
   display: flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: 2.75rem;
   list-style: none;
   margin: 0;
+  margin-left: auto;
+  margin-right: 2.75rem;
   padding: 0;
 }
 
@@ -407,7 +443,7 @@ button { font: inherit; }
 
 @media (max-width: 860px) {
   .nav-links { display: none; }
-  .nav-menu { display: block; position: relative; }
+  .nav-menu { display: block; position: relative; margin-left: auto; }
 }
 
 .nav-menu summary {
@@ -461,21 +497,8 @@ button { font: inherit; }
    transition/animation on the swap; it's instant, same as
    every other state change in this file. */
 .theme-toggle {
-  transition: color var(--duration-base) var(--ease-standard), border-color var(--duration-base) var(--ease-standard);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  border: 1px solid var(--color-line);
-  color: var(--color-ink-muted);
-  cursor: pointer;
+  display: none !important;
 }
-.theme-toggle:hover { color: var(--color-ink); border-color: var(--color-ink-muted); }
-
-.theme-toggle { position: relative; }
 
 .theme-icon {
   width: 1.125rem;
@@ -526,39 +549,37 @@ button { font: inherit; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.625rem;
+  padding: 0.625rem 1.375rem;
   border-radius: var(--radius-md);
-  background: var(--gradient-accent);
-  color: #FFFFFF;
+  background: var(--color-canvas);
+  background-image: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
   font-weight: 600;
   font-size: 0.9375rem;
   letter-spacing: var(--tracking-normal);
   text-decoration: none;
-  border: none;
+  border: 1px solid var(--color-line);
   cursor: pointer;
   white-space: nowrap;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 1px 2px rgba(18, 19, 25, 0.08),
-    0 6px 16px -4px rgba(74, 63, 216, 0.28);
+  box-shadow: 0 1px 3px rgba(18, 19, 25, 0.05);
   transition:
-    background var(--duration-base) var(--ease-standard),
+    border-color var(--duration-base) var(--ease-standard),
     box-shadow var(--duration-base) var(--ease-standard),
     transform var(--duration-fast) var(--ease-standard);
 }
 .btn-primary:hover {
-  background: var(--gradient-accent-hover);
   transform: translateY(-1px);
+  border-color: rgba(74, 63, 216, 0.45);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 1px 2px rgba(18, 19, 25, 0.08),
-    0 10px 22px -4px rgba(74, 63, 216, 0.36);
+    0 0 0 3px rgba(74, 63, 216, 0.12),
+    0 4px 14px -2px rgba(74, 63, 216, 0.2);
 }
 .btn-primary:active {
   transform: translateY(0);
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.18),
-    0 1px 2px rgba(18, 19, 25, 0.08);
+  box-shadow: 0 1px 2px rgba(18, 19, 25, 0.08);
 }
 
 /* ============================================
@@ -687,8 +708,8 @@ button { font: inherit; }
 .hero {
   display: flex;
   align-items: flex-end;
-  min-height: clamp(34rem, 88vh, 50rem);
-  min-height: clamp(34rem, 88svh, 50rem);
+  min-height: clamp(30rem, 78vh, 44rem);
+  min-height: clamp(30rem, 78svh, 44rem);
 }
 
 /* Sits above the atmosphere layers and the noise (same
@@ -707,7 +728,7 @@ button { font: inherit; }
   inset: 0;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 320ms var(--ease-standard);
+  transition: opacity 500ms ease-in-out;
 }
 
 .hero-slide--active {
@@ -746,39 +767,7 @@ button { font: inherit; }
 }
 
 .hero-slideshow-arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(12, 13, 17, 0.45);
-  color: #FFFFFF;
-  cursor: pointer;
-  transition:
-    background var(--duration-base) var(--ease-standard),
-    border-color var(--duration-base) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard);
-}
-
-.hero-slideshow-arrow:hover {
-  background: rgba(12, 13, 17, 0.65);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-.hero-slideshow-arrow:active {
-  transform: scale(0.94);
-}
-
-.hero-slideshow-arrow svg {
-  width: 1rem;
-  height: 1rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  display: none !important;
 }
 
 .hero-slideshow-dots {
@@ -864,34 +853,22 @@ button { font: inherit; }
    would vanish on this white band.
    ============================================ */
 .recognition-strip {
-  /* The band's height is the constant, not the padding: marks and
-     padding trade against each other so the strip always occupies
-     the same 9.25rem regardless of --mark-height. Retune the mark
-     size alone and the band stays put. */
-  --mark-height: 5rem;
-  --band-height: 9.25rem;
-
+  --mark-height: 3.6rem; /* +20% on the original 3rem */
   background: #FFFFFF;
   border-top: 1px solid #E2E1DA;
   border-bottom: 1px solid #E2E1DA;
-  padding: calc((var(--band-height) - var(--mark-height)) / 2) 0;
+  padding: 0.9rem 0;
 }
 
-/* space-evenly, not centre: three marks totalling ~410px in a
-   1137px row read as a cluster stranded mid-band when centred.
-   Even distribution lets them hold the full width.
-
-   Column gap is deliberately 0 — any column gap would stack on
-   top of the distributed space, making the gaps BETWEEN marks
-   wider than the ones at the ends. At 0 all four come out equal.
-   Wrapping only happens below 640px, where the media query
-   restores a real gap. */
 .recognition-strip-row {
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: var(--space-6) 0;
+  /* +30% on the original 10rem column gap. The marks are the only
+     thing on this band, so the air between them is what makes them
+     read as three separate endorsements rather than one graphic. */
+  gap: 1.25rem 13rem;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -901,19 +878,27 @@ button { font: inherit; }
   display: block;
   height: var(--mark-height);
   width: auto;
+  max-width: 240px;
+  object-fit: contain;
 }
 
 /* Wrapping is expected here, so the band grows past --band-height
    and centring beats even distribution on a ragged last row. */
+@media (max-width: 1100px) {
+  .recognition-strip-row {
+    gap: 1.25rem 7rem;
+  }
+}
+
 @media (max-width: 640px) {
   .recognition-strip {
-    --mark-height: 3.5rem;
+    --mark-height: 4.2rem;
     padding: var(--space-6) 0;
   }
 
   .recognition-strip-row {
     justify-content: center;
-    gap: var(--space-5) var(--space-6);
+    gap: var(--space-6) var(--space-7);
   }
 }
 
@@ -932,6 +917,13 @@ button { font: inherit; }
   background: var(--color-canvas);
   color: var(--color-ink);
   padding-top: 0;
+  /* One section break, not three stacked ones. This band used to
+     contribute space-9 on top of the selector's own space-8 and
+     then the Retailer's space-7 — and the renderer window, sized
+     by a fixed ratio, hung below the garment row on top of that.
+     Now the selector ends flush with the garment row, and the
+     break is exactly space-9 + space-9 (this padding plus the
+     Retailer's), identical to every other section boundary. */
   padding-bottom: var(--space-9);
   /* border-top moved to .recording-row so the separator sits
      immediately above "Captured from the running application."
@@ -954,15 +946,11 @@ button { font: inherit; }
 .recording-row {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  gap: var(--space-9);
-  align-items: start;
-  /* Thin separator line that sits directly above
-     "Captured from the running application." — moved here
-     from .product-band so the line is flush with the content
-     rather than floating at the top of an 8rem empty zone.
-     Padding-top preserves the original vertical breathing room. */
+  gap: var(--space-7);
+  align-items: center;
   border-top: 1px solid var(--color-line);
-  padding-top: calc(var(--space-9) + var(--space-6));
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-7);
 }
 
 .recording-video-wrap {
@@ -976,15 +964,11 @@ button { font: inherit; }
   position: relative;
   margin: 0;
   width: 100%;
-  max-width: 26rem;
-  /* Was 27 / 32 while the slot sat empty. The real recording
-     landed at 630×1138 native, and the §5.1a DEV NOTE is explicit
-     that its portrait ratio is preserved exactly — no letterbox,
-     no crop — so the frame now carries the footage's own ratio. */
+  max-width: 19rem;
   aspect-ratio: 630 / 1138;
   overflow: hidden;
   border-radius: var(--radius-md);
-  box-shadow: 0 32px 64px -32px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1051,32 +1035,27 @@ button { font: inherit; }
 }
 
 .recording-text {
-  max-width: 32rem;
+  max-width: 36rem;
   text-align: left;
 }
 
-/* Was intentionally the same typographic tier as
-   .retailer-lead ("Fewer walkouts from indecision.") — that
-   one was later sized up on its own, so this is now the
-   smaller of the two. Left as-is since only the retailer
-   stat was asked to be bigger. */
 .recording-lead {
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(1.5rem, 1.2rem + 1.3vw, 2.125rem);
-  line-height: 1.25;
-  letter-spacing: var(--tracking-normal);
+  font-weight: 600;
+  font-size: var(--type-statement);
+  line-height: 1.14;
+  letter-spacing: var(--tracking-tight);
   color: var(--color-ink);
-  /* Widened from space-5 — the gap to the caption below read
-     as too tight for a heading/subheading pairing. */
-  margin: 0 0 var(--space-7);
+  margin: 0 0 var(--space-5);
+  text-wrap: balance;
 }
 
 .recording-caption {
-  font-size: 1.0625rem;
-  line-height: 1.65;
+  font-size: var(--type-lead);
+  line-height: 1.7;
   color: var(--color-ink-muted);
   margin: 0;
+  text-wrap: pretty;
 }
 
 @media (max-width: 900px) {
@@ -1103,59 +1082,57 @@ button { font: inherit; }
    not a rebuild (§5.1b's own Phase 2 readiness
    requirement). */
 .selector {
-  padding-top: var(--space-9);
-  padding-bottom: var(--space-3);
+  padding-top: var(--space-7);
+  /* The section below (Fewer walkouts) owns the gap now — stacking
+     this padding on top of the product band's own bottom padding
+     AND the next section's top padding left a dead band roughly
+     twice the height of every other section break on the page. */
+  padding-bottom: 0;
   border-top: 1px solid var(--color-line);
 }
 
+/* Lives inside the left column (see VtonSelector.tsx) so the
+   renderer can start level with it. The bottom gap is the flex
+   column's own gap; this only adds the extra step that separates a
+   section heading from the controls under it. */
 .selector-header {
-  margin-bottom: var(--space-7);
+  margin-bottom: 0;
 }
 
-.selector-label {
+.selector-title {
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.125rem);
-  letter-spacing: var(--tracking-normal);
-  text-transform: none;
+  font-weight: 600;
+  font-size: var(--type-section);
+  line-height: 1.15;
+  letter-spacing: var(--tracking-snug);
   color: var(--color-ink);
-  margin: 0 0 var(--space-4);
+  margin: 0;
 }
 
-/* Mandatory, persistent disclosure (§5.1b) — not a
-   tooltip, not a one-time modal. It stays on screen for
-   as long as the component is visible, because nothing
-   here may imply real-time generation for arbitrary
-   uploads. */
-.selector-disclosure {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5em;
-  font-size: 0.8125rem;
-  color: var(--color-ink-muted);
-  padding: 0.4em 0.75em;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-}
-.selector-disclosure::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-ink-muted);
-  flex-shrink: 0;
+/* stretch, not start: the renderer column is sized by the controls
+   column, which is what makes the window run from the heading's top
+   edge to the bottom of the garment row. */
+.selector-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-7);
+  align-items: stretch;
 }
 
-/* Gender toggle — two discrete, mutually exclusive
-   sections, never a combined filter (§5.1b, explicit:
-   "simpler to build, and no nonsensical combinations"). */
+.selector-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  width: 100%;
+}
+
 .gender-toggle {
   display: inline-flex;
-  align-self: flex-start; /* prevents flex stretch — wraps to button content width only */
+  align-self: flex-start;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
   padding: 3px;
-  margin-top: 0;
+  background: var(--color-canvas);
 }
 
 .gender-toggle button {
@@ -1165,160 +1142,261 @@ button { font: inherit; }
   color: var(--color-ink-muted);
   font-family: var(--font-body);
   font-size: 0.875rem;
-  font-weight: 500;
-  padding: 0.5rem 1.125rem;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
   border-radius: calc(var(--radius-md) - 3px);
   cursor: pointer;
   transition: background var(--duration-base) var(--ease-standard), color var(--duration-base) var(--ease-standard);
 }
 
+.gender-toggle button.active,
 .gender-toggle button[aria-pressed="true"] {
-  background: var(--color-canvas-raised);
-  color: var(--color-ink);
-}
-
-/* Two-column composition: controls on the left (the
-   inputs), the result frame on the right (the payoff) —
-   mirrors the natural left-to-right "choose, then see the
-   result" reading order instead of stacking everything in
-   one centered column. */
-.selector-body {
-  display: grid;
-  grid-template-columns: minmax(0, 0.54fr) minmax(0, 0.46fr);
-  gap: var(--space-7);
-  align-items: start;
-}
-
-.selector-controls {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-7);
-  width: 100%;
-}
-
-.control-group {
-  display: flex;
-  flex-direction: column;
+  background: var(--color-ink);
+  color: #FFFFFF;
 }
 
 .control-group h3 {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--color-ink-muted);
-  margin: 0 0 var(--space-4);
-  font-weight: 500;
+  margin: 0 0 var(--space-3);
+  font-weight: 600;
 }
 
-.thumbnail-row {
+/* Subject Grid */
+.subject-grid {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-4);
+  flex-wrap: wrap;
 }
 
-/* One flexible pattern, reused for both subjects and
-   garments — same class handles both, since both are
-   fundamentally "pick one of several visual options."
-   No real photography exists yet, so these are labeled
-   reserved slots, not fabricated placeholder imagery.
-   Sized up from the previous pass (3.5rem) — this is the
-   component the file's own comments call the most
-   important on the site, so it should feel substantial to
-   tap, not like a secondary filter control. Hover and
-   active states are now distinct gestures: hover lifts and
-   brightens the border to invite the tap; the pressed
-   state adds a soft glow ring so the current selection
-   reads unambiguously at a glance, not just via a slightly
-   different grey. */
-.thumbnail {
+.subject-card {
   appearance: none;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 10.5rem;
-  height: 10.5rem;
+  width: 9rem;
+  padding: 0.5rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-line);
   background: var(--color-canvas-raised);
-  color: var(--color-ink-muted);
-  font-size: 1.125rem;
-  font-weight: 500;
   cursor: pointer;
-  transition:
-    background var(--duration-base) var(--ease-standard),
-    border-color var(--duration-base) var(--ease-standard),
-    color var(--duration-base) var(--ease-standard),
-    box-shadow var(--duration-base) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard);
+  transition: all var(--duration-base) var(--ease-standard);
 }
 
-.thumbnail:hover {
-  border-color: var(--color-ink-muted);
-  background: var(--color-canvas-raised);
-  color: var(--color-ink);
+.subject-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px -16px rgba(18, 19, 25, 0.25);
+  border-color: var(--color-ink-muted);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.15);
 }
 
-.thumbnail:active { transform: scale(0.94) translateY(0); }
-
-.thumbnail[aria-pressed="true"] {
+.subject-card.selected {
   border-color: var(--color-ink);
-  background: var(--color-canvas-raised);
-  color: var(--color-ink);
-  box-shadow: 0 0 0 3px rgba(18, 19, 25, 0.08);
-}
-.thumbnail[aria-pressed="true"]:hover {
-  transform: none;
+  box-shadow: 0 0 0 2px var(--color-ink);
 }
 
-/* Result display — framed inside the actual kiosk UI
-   chrome, not a plain photo swap. This is what makes the
-   result read as "the product interface" rather than a
-   lookbook image (§5.1b's own reasoning). */
-.result-frame {
+.subject-thumb-wrap {
   position: relative;
-  margin: 0 0 0 auto;
   width: 100%;
-  max-width: 26rem;
-  aspect-ratio: 27 / 32; /* was 9/16; height cut by 1/3 → 27:32 */
-  background:
-    radial-gradient(120% 90% at 50% 15%, rgba(255,255,255,0.05), transparent 60%),
-    #050608;
+  aspect-ratio: 3 / 4;
   border-radius: var(--radius-md);
-  box-shadow: 0 32px 64px -32px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  background: #EBEAE4;
+}
+
+.subject-thumb-img {
+  object-fit: cover;
+  object-position: top center;
+}
+
+.card-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  text-align: center;
+}
+
+/* Garment Grid */
+.garment-grid {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.garment-card {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 7.5rem;
+  padding: 0.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas-raised);
+  cursor: pointer;
+  transition: all var(--duration-base) var(--ease-standard);
+}
+
+.garment-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-ink-muted);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.15);
+}
+
+.garment-card.selected {
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 2px var(--color-ink);
+}
+
+.garment-thumb-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #EBEAE4;
+}
+
+.garment-thumb-img {
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* Renderer Window Box (Frosted Black Window) */
+.renderer-box {
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+}
+
+.renderer-window {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  /* Height comes from the controls column, not from a fixed ratio —
+     that is the alignment. min-height only guards the case where the
+     controls collapse shorter than the window can usefully be. */
+  height: 100%;
+  min-height: 26rem;
+  border-radius: var(--radius-lg);
+  background: rgba(12, 13, 17, 0.88);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 32px 64px -24px rgba(0, 0, 0, 0.6);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  padding: var(--space-5);
 }
 
-.result-frame-caption {
-  font-size: 0.8125rem;
-  color: rgba(232, 232, 236, 0.55);
-  line-height: 1.6;
-  transition: opacity var(--duration-fast) var(--ease-standard);
+.render-action-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.result-frame-caption strong {
-  display: block;
+.btn-render-trigger {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 9999px;
+  background: var(--gradient-accent);
+  color: #FFFFFF;
   font-family: var(--font-body);
+  font-weight: 600;
   font-size: 0.9375rem;
-  letter-spacing: 0;
-  color: var(--color-device-text);
-  margin-bottom: var(--space-2);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 24px -4px rgba(139, 92, 246, 0.5);
+  transition: all var(--duration-base) var(--ease-standard);
+}
+
+.btn-render-trigger:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 32px -4px rgba(139, 92, 246, 0.65);
+}
+
+.render-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.rendering-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #FFFFFF;
+}
+
+.render-spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #D946EF;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.rendering-text {
+  font-size: 0.875rem;
   font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: var(--tracking-normal);
+}
+
+.rendered-result {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* The result is CONTAINED, never cropped — every subject is shown
+   head to hem regardless of how tall the window has grown. The
+   blurred, over-scaled copy underneath fills whatever margin that
+   leaves, so the window still reads edge-to-edge rather than
+   letterboxed. */
+.rendered-result-backdrop {
+  object-fit: cover;
+  transform: scale(1.15);
+  filter: blur(28px) saturate(120%) brightness(0.55);
+  opacity: 0.9;
+}
+
+.rendered-result-img {
+  object-fit: contain;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @media (max-width: 860px) {
   .selector-body {
     grid-template-columns: 1fr;
   }
-  .result-frame {
-    margin-inline: auto;
-    max-width: 18rem;
+  /* Single column: nothing above to inherit a height from, so the
+     window goes back to its own ratio and centres. */
+  .renderer-box {
+    justify-content: center;
+    height: auto;
+  }
+  .renderer-window {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 630 / 920;
   }
 }
 
@@ -1331,39 +1409,43 @@ button { font: inherit; }
    anywhere here; hierarchy comes from unequal type scale
    and unequal widths instead, per §6/§7.1.
    ============================================ */
+/* One section rhythm sitewide: space-9 top and bottom, matching the
+   Hero, Behind the Build, Team and Contact sections. This section
+   used to run at space-7 and then sit under two other sections'
+   trailing padding, which read as a hole above the heading and a
+   cramped gap below it. */
 .retailer {
   padding-block: var(--space-9);
 }
 
 .retailer-lead {
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(1.875rem, 1.4rem + 1.8vw, 2.75rem);
-  line-height: 1.2;
-  letter-spacing: var(--tracking-normal);
+  font-weight: 600;
+  font-size: var(--type-statement);
+  line-height: 1.14;
+  letter-spacing: var(--tracking-tight);
   color: var(--color-ink);
-  max-width: 28rem;
-  margin: 0 0 var(--space-8);
+  max-width: 22ch;
+  margin: 0 0 var(--space-7);
+  text-wrap: balance;
 }
 
 .retailer-secondary {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-7) var(--space-8);
+  justify-content: space-between;
+  gap: var(--space-5);
 }
 
 .retailer-item {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: var(--type-lead);
   line-height: 1.6;
+  letter-spacing: var(--tracking-normal);
   color: var(--color-ink-muted);
+  flex: 1 1 0;
+  text-wrap: pretty;
 }
-
-/* Unequal widths, not equal thirds — the mechanism that
-   actually avoids the card-grid read. */
-.retailer-item:nth-child(1) { flex: 1 1 15rem; max-width: 17rem; }
-.retailer-item:nth-child(2) { flex: 1 1 12rem; max-width: 14rem; }
-.retailer-item:nth-child(3) { flex: 1 1 18rem; max-width: 20rem; }
 
 @media (max-width: 640px) {
   .retailer-secondary { flex-direction: column; gap: var(--space-6); }
@@ -1394,8 +1476,8 @@ button { font: inherit; }
 
 .how-it-works h2 {
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.25rem;
+  font-weight: 600;
+  font-size: var(--type-minor);
   letter-spacing: var(--tracking-normal);
   color: var(--color-ink);
   margin: 0 0 var(--space-4);
@@ -1425,22 +1507,25 @@ button { font: inherit; }
 
 .btb-header {
   margin-bottom: var(--space-8);
-  max-width: 34rem;
+  max-width: 42rem;
 }
 
 .btb-header h2 {
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.375rem;
+  font-weight: 600;
+  font-size: var(--type-section);
+  line-height: 1.18;
+  letter-spacing: var(--tracking-snug);
   color: var(--color-device-text);
   margin: 0 0 var(--space-3);
 }
 
 .btb-header p {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--type-lead);
   line-height: 1.6;
-  color: rgba(232, 232, 236, 0.6);
+  letter-spacing: var(--tracking-normal);
+  color: rgba(232, 232, 236, 0.66);
 }
 
 /* Dark-mode inversion: everywhere else, --color-device is a
@@ -1464,7 +1549,7 @@ button { font: inherit; }
 }
 
 [data-theme="dark"] .btb-header p {
-  color: rgba(18, 19, 25, 0.6);
+  color: rgba(18, 19, 25, 0.66);
 }
 
 [data-theme="dark"] .photowalk-item {
@@ -1472,130 +1557,183 @@ button { font: inherit; }
   background: rgba(18, 19, 25, 0.03);
 }
 
-[data-theme="dark"] .photowalk-item:hover {
+[data-theme="dark"] .photowalk-item:hover,
+[data-theme="dark"] .photowalk-item:focus-visible {
   border-color: rgba(18, 19, 25, 0.32);
   background: rgba(18, 19, 25, 0.05);
   box-shadow: 0 24px 40px -20px rgba(18, 19, 25, 0.18);
 }
 
-[data-theme="dark"] .photowalk-item figcaption {
-  color: rgba(18, 19, 25, 0.6);
-}
-
-[data-theme="dark"] .photowalk-item:hover figcaption {
-  color: #121319;
+[data-theme="dark"] .photowalk-note {
+  color: rgba(18, 19, 25, 0.72);
 }
 
 /* ---- Photowalk ----
-   Four EQUAL frames of real photography from the build —
-   hardware, install day, the team, planning. (The prototype's
-   featured wide tile was retired with its image; no tile
-   outranks the others now.) Rounded corners (radius-lg) mark
-   these deliberately as PHOTOGRAPHS rather than interface
-   captures — everywhere else in the file that shows the
-   product itself (video, result frame, screenshots) is
-   sharp-cornered on purpose, so a photo gallery reads as a
-   distinct, softer register: documentary evidence of the
-   build, not the product UI. */
-.photowalk-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-rows: 14rem;
+   Four EQUAL frames of real photography from the build. Rounded
+   corners (radius-lg) mark these deliberately as PHOTOGRAPHS
+   rather than interface captures — everywhere else in the file
+   that shows the product itself (video, result frame,
+   screenshots) is sharp-cornered on purpose, so a photo gallery
+   reads as a distinct, softer register: documentary evidence of
+   the build, not the product UI.
+
+   Second pass: the titles burned over the images are gone, and
+   the row is an expanding filmstrip rather than a fixed grid.
+   Resting, the four tiles split the row evenly. Hover (or
+   keyboard-focus) one and it takes roughly half the row while its
+   siblings give up their width — and the width it gains opens a
+   panel beside the photograph carrying that tile's note. Nothing
+   is hidden from assistive tech: the note is real text in the
+   DOM at all times, only its container's width animates. */
+.photowalk-row {
+  display: flex;
+  align-items: stretch;
   gap: var(--space-4);
+  height: 21rem;
 }
 
 .photowalk-item {
   position: relative;
   margin: 0;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
   border-radius: var(--radius-lg);
-  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.03);
   overflow: hidden;
-  display: flex;
-  align-items: flex-end;
-  padding: var(--space-4);
+  cursor: pointer;
   transition:
+    flex-grow 420ms var(--ease-standard),
     border-color 320ms var(--ease-standard),
     background 320ms var(--ease-standard),
-    transform 320ms var(--ease-standard),
     box-shadow 320ms var(--ease-standard);
 }
 
-.photowalk-item:hover {
-  border-style: solid;
+/* Siblings yield first (the row-level rule), then the active tile
+   claims the space (the tile-level rule wins on specificity). */
+.photowalk-row:hover .photowalk-item,
+.photowalk-row:focus-within .photowalk-item {
+  flex-grow: 0.65;
+}
+
+.photowalk-item:hover,
+.photowalk-item:focus-visible {
+  flex-grow: 2.4;
   border-color: rgba(255, 255, 255, 0.36);
   background: rgba(255, 255, 255, 0.06);
-  transform: translateY(-6px);
   box-shadow: 0 24px 40px -20px rgba(0, 0, 0, 0.55);
 }
 
-.photowalk-item figcaption {
-  font-size: 0.8125rem;
-  letter-spacing: 0.01em;
-  color: rgba(232, 232, 236, 0.65);
-  transition: transform 320ms var(--ease-standard), color 320ms var(--ease-standard);
+.photowalk-media {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.photowalk-item:hover figcaption {
-  transform: translateY(-2px);
-  color: var(--color-device-text);
-}
-
-@media (max-width: 860px) {
-  .photowalk-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 12rem;
-  }
-}
-
-@media (max-width: 560px) {
-  .photowalk-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ---- Photowalk: filled slots ----
-   The real photographs landed (§8): each tile now carries an
-   image that fills its frame (cover inside the fixed grid rows —
-   no distortion), with the caption riding a bottom scrim.
-   Caption ink is photo-relative — fixed light in BOTH themes,
-   like the hero overlay and the device chrome — because it sits
-   on the photograph, not on the section surface; this
-   deliberately overrides the section's dark-mode inversion for
-   these tiles. The dashed→solid border gesture and hover lift
-   are unchanged. */
-.photowalk-item img {
+.photowalk-media img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 420ms var(--ease-standard);
 }
 
-.photowalk-item--photo::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(5, 6, 8, 0.66) 0%, rgba(5, 6, 8, 0.22) 42%, rgba(5, 6, 8, 0) 68%);
-  pointer-events: none;
+.photowalk-item:hover .photowalk-media img,
+.photowalk-item:focus-visible .photowalk-media img {
+  transform: scale(1.03);
 }
 
-.photowalk-item--photo figcaption {
-  position: relative;
-  z-index: 1;
-  color: rgba(244, 243, 239, 0.88);
+/* Collapsed to zero width at rest — the text is still in the
+   accessibility tree, it simply has no room. The inner span is
+   pinned to the panel's open width so the copy doesn't reflow
+   line by line while the panel animates. */
+.photowalk-note {
+  --note-width: 17rem;
+  flex: 0 0 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  color: rgba(232, 232, 236, 0.78);
+  transition:
+    flex-basis 420ms var(--ease-standard),
+    opacity 240ms var(--ease-standard);
 }
 
-.photowalk-item--photo:hover figcaption {
-  color: #FFFFFF;
+.photowalk-note span {
+  display: block;
+  width: var(--note-width);
+  padding: var(--space-5);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  letter-spacing: var(--tracking-normal);
+  text-wrap: pretty;
 }
 
-[data-theme="dark"] .photowalk-item--photo figcaption {
-  color: rgba(244, 243, 239, 0.88);
+.photowalk-item:hover .photowalk-note,
+.photowalk-item:focus-visible .photowalk-note {
+  flex-basis: var(--note-width);
+  opacity: 1;
+  transition-delay: 0ms, 120ms;
 }
 
-[data-theme="dark"] .photowalk-item--photo:hover figcaption {
-  color: #FFFFFF;
+/* Touch and narrow viewports get no hover, so the filmstrip
+   unstacks into rows that show photograph and note side by side
+   permanently — same information, no interaction required. */
+@media (max-width: 900px) {
+  .photowalk-row {
+    flex-direction: column;
+    height: auto;
+    gap: var(--space-5);
+  }
+
+  .photowalk-item,
+  .photowalk-row:hover .photowalk-item,
+  .photowalk-row:focus-within .photowalk-item,
+  .photowalk-item:hover,
+  .photowalk-item:focus-visible {
+    flex: none;
+    height: 13rem;
+    cursor: default;
+  }
+
+  .photowalk-note,
+  .photowalk-item:hover .photowalk-note {
+    --note-width: 100%;
+    flex: 0 0 46%;
+    opacity: 1;
+  }
+
+  .photowalk-item:hover .photowalk-media img {
+    transform: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .photowalk-item,
+  .photowalk-row:hover .photowalk-item,
+  .photowalk-item:hover {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .photowalk-media {
+    flex: 0 0 13rem;
+    width: 100%;
+  }
+
+  .photowalk-note,
+  .photowalk-item:hover .photowalk-note {
+    flex: 0 0 auto;
+  }
+
+  .photowalk-note span {
+    padding: var(--space-4) var(--space-5) var(--space-5);
+  }
 }
 
 /* ============================================
@@ -1612,24 +1750,38 @@ button { font: inherit; }
   padding-block: var(--space-9);
 }
 
-.team-header h2 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.5rem;
-  color: var(--color-ink);
-  margin: 0 0 var(--space-7);
+.team-header {
+  text-align: center;
 }
 
+.team-header h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--type-section);
+  line-height: 1.18;
+  letter-spacing: var(--tracking-snug);
+  color: var(--color-ink);
+  margin: 0 auto var(--space-7);
+  max-width: 22ch;
+  text-wrap: balance;
+}
+
+/* The replacement founders' photograph is near-square, not
+   panoramic — a full-width 21:9 frame would have cropped it to a
+   letterbox slice of three torsos. It sits centred at a
+   portrait-friendly width instead, in a 5:4 frame anchored high so
+   the faces clear the crop. */
 .team-group-photo {
   width: 100%;
-  aspect-ratio: 21 / 9;
+  max-width: 44rem;
+  aspect-ratio: 5 / 4;
   background: var(--color-canvas-raised);
   border: 1px dashed var(--color-line);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--space-8);
+  margin: 0 auto var(--space-8);
 }
 
 .team-group-photo-label {
@@ -1687,15 +1839,21 @@ button { font: inherit; }
   transform: scale(1.08);
 }
 
+/* Names get the display face — the one place in the file where a
+   person's name is the content, so it reads as a name rather than
+   as a line of UI copy. */
 .team-name {
+  font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.0625rem;
+  letter-spacing: var(--tracking-snug);
   color: var(--color-ink);
-  margin: 0 0 0.15rem;
+  margin: 0 0 0.2rem;
 }
 
 .team-role {
   font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--color-ink-muted);
   margin: 0 0 var(--space-3);
 }
@@ -1735,7 +1893,7 @@ button { font: inherit; }
 
 @media (max-width: 780px) {
   .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .team-group-photo { aspect-ratio: 4 / 3; }
+  .team-group-photo { aspect-ratio: 1; }
 }
 
 @media (max-width: 480px) {
@@ -1766,10 +1924,9 @@ button { font: inherit; }
 }
 
 /* ---- Team: founders' group photograph (filled slot) ----
-   The §5.2 group photo landed. The frame keeps the prototype's
-   exact geometry (21/9, 4/3 under 780px) and chrome; the
-   photograph covers it, positioned high (object-position 34%)
-   so the founders' faces sit inside the wide crop. */
+   Covers the 5:4 frame, anchored at 22% so the crop takes its
+   spare height off the bottom of the frame (floor, shoes) rather
+   than splitting it between the ceiling and the founders' faces. */
 .team-group-photo--photo {
   position: relative;
   overflow: hidden;
@@ -1781,7 +1938,7 @@ button { font: inherit; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 34%;
+  object-position: 50% 22%;
 }
 
 /* ============================================
@@ -1800,8 +1957,10 @@ button { font: inherit; }
 
 .contact-inner h2 {
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.75rem;
+  font-weight: 600;
+  font-size: var(--type-section);
+  line-height: 1.18;
+  letter-spacing: var(--tracking-snug);
   color: var(--color-ink);
   margin: 0 0 var(--space-6);
 }
@@ -1948,9 +2107,9 @@ button { font: inherit; }
 
 .legal-page h1 {
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.75rem;
-  letter-spacing: var(--tracking-normal);
+  font-weight: 600;
+  font-size: var(--type-section);
+  letter-spacing: var(--tracking-snug);
   color: var(--color-ink);
   margin: 0 0 var(--space-6);
 }

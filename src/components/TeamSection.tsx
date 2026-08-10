@@ -14,20 +14,21 @@ export default function TeamSection() {
     <section className="team" id="team" aria-labelledby="team-heading">
       <div className="container">
         <div className="team-header">
-          <h2 id="team-heading">Team</h2>
+          <h2 id="team-heading">Meet the Minds behind Mirai</h2>
         </div>
 
-        {/* §5.2: the founders' group photograph, filling its reserved
-          frame (the frame keeps the prototype's exact 21/9 / 4:3
-          geometry; the photo covers it, positioned so the faces sit
-          inside the wide crop). Individual card photos below remain
-          reserved slots. */}
+        {/* §5.2: the founders' group photograph. The replacement frame
+          is near-square rather than the panoramic one the old photo
+          needed, so it no longer spans the full container — it sits
+          centred at a portrait-friendly width, anchored high so the
+          three faces stay well inside the crop. */}
         <div className="team-group-photo team-group-photo--photo">
           <Image
-            src="/images/team/founders-group.jpeg"
+            src="/images/team/founders-portrait.jpeg"
             alt="The three Mirai founders standing together in the V-Nest co-working space"
             fill
-            sizes="(max-width: 1440px) 100vw, 1264px"
+            sizes="(max-width: 760px) 100vw, 44rem"
+            priority={false}
           />
         </div>
 

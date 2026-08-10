@@ -1,61 +1,80 @@
-/**
- * Interactive Selector data (§5.1b). Fully data-driven — the 9
- * combinations live in one array, never as separate hardcoded
- * markup blocks, so extending the matrix later (more subjects,
- * more garments) is a data change, not a rebuild.
- *
- * No real generated imagery exists yet, so the result frame
- * shows a labeled reserved state rather than a fabricated photo
- * — same "reserve the slot, never fake the asset" principle
- * used for the video and screenshots.
- */
-
 export type Gender = "male" | "female";
+
+export interface SubjectOption {
+  id: string;
+  label: string;
+  gender: Gender;
+  image: string;
+  /* Per-subject crop anchor for the 3:4 thumbnail. The default
+     (top-anchored, set in CSS) suits the male frames, where the
+     subject starts near the top edge. The female frame is a much
+     taller crop whose upper third is empty street, so anchoring it
+     to the top fills the card with background and cuts the subject
+     off — it anchors low instead. */
+  thumbPosition?: string;
+}
+
+export interface GarmentOption {
+  id: string;
+  label: string;
+  gender: Gender;
+  image: string;
+}
 
 export interface VtonResult {
   gender: Gender;
-  subject: string;
-  garment: string;
+  subjectId: string;
+  garmentId: string;
+  resultImage: string;
 }
 
-export const RESULTS: VtonResult[] = [
-  { gender: "male", subject: "Subject A", garment: "Kurta — Slate" },
-  { gender: "male", subject: "Subject A", garment: "Bomber — Rust" },
-  { gender: "male", subject: "Subject A", garment: "Shirt — Ivory" },
-  { gender: "male", subject: "Subject B", garment: "Kurta — Slate" },
-  { gender: "male", subject: "Subject B", garment: "Bomber — Rust" },
-  { gender: "male", subject: "Subject B", garment: "Shirt — Ivory" },
-  { gender: "female", subject: "Subject C", garment: "Saree — Teal" },
-  { gender: "female", subject: "Subject C", garment: "Kurti — Rose" },
-  { gender: "female", subject: "Subject C", garment: "Dress — Ivory" },
+export const SUBJECTS: SubjectOption[] = [
+  { id: "m1", label: "Subject 1", gender: "male", image: "/images/vton/subject-m1.jpg" },
+  { id: "m2", label: "Subject 2", gender: "male", image: "/images/vton/subject-m2.png" },
+  {
+    id: "w1",
+    label: "Woman",
+    gender: "female",
+    image: "/images/vton/subject-w1.png",
+    thumbPosition: "center 88%",
+  },
 ];
 
-export function subjectsFor(gender: Gender): string[] {
-  const seen: string[] = [];
-  for (const r of RESULTS) {
-    if (r.gender === gender && !seen.includes(r.subject)) seen.push(r.subject);
-  }
-  return seen;
+export const GARMENTS: GarmentOption[] = [
+  { id: "m_g1", label: "Simple Hoodie", gender: "male", image: "/images/vton/garment-m1.jpg" },
+  { id: "m_g2", label: "Leather Jacket", gender: "male", image: "/images/vton/garment-m2.webp" },
+  { id: "m_g3", label: "Simple Jeans", gender: "male", image: "/images/vton/garment-m3.jpg" },
+
+  { id: "w_g2", label: "T-Shirt", gender: "female", image: "/images/vton/garment-w2.avif" },
+  { id: "w_g1", label: "Dress", gender: "female", image: "/images/vton/garment-w1.jpg" },
+  { id: "w_g3", label: "Formals", gender: "female", image: "/images/vton/garment-w3.png" },
+];
+
+export const RESULTS: VtonResult[] = [
+  { gender: "male", subjectId: "m1", garmentId: "m_g1", resultImage: "/images/vton/result-m1-g1.png" },
+  { gender: "male", subjectId: "m1", garmentId: "m_g2", resultImage: "/images/vton/result-m1-g2.png" },
+  { gender: "male", subjectId: "m1", garmentId: "m_g3", resultImage: "/images/vton/result-m1-g3.png" },
+
+  { gender: "male", subjectId: "m2", garmentId: "m_g1", resultImage: "/images/vton/result-m2-g1.webp" },
+  { gender: "male", subjectId: "m2", garmentId: "m_g2", resultImage: "/images/vton/result-m2-g2.png" },
+  { gender: "male", subjectId: "m2", garmentId: "m_g3", resultImage: "/images/vton/result-m2-g3.png" },
+
+  { gender: "female", subjectId: "w1", garmentId: "w_g1", resultImage: "/images/vton/result-w1-g1.png" },
+  { gender: "female", subjectId: "w1", garmentId: "w_g2", resultImage: "/images/vton/result-w1-g2.png" },
+  { gender: "female", subjectId: "w1", garmentId: "w_g3", resultImage: "/images/vton/result-w1-g3.png" },
+];
+
+export function getSubjects(gender: Gender): SubjectOption[] {
+  return SUBJECTS.filter((s) => s.gender === gender);
 }
 
-export function garmentsFor(gender: Gender): string[] {
-  const seen: string[] = [];
-  for (const r of RESULTS) {
-    if (r.gender === gender && !seen.includes(r.garment)) seen.push(r.garment);
-  }
-  return seen;
+export function getGarments(gender: Gender): GarmentOption[] {
+  return GARMENTS.filter((g) => g.gender === gender);
 }
 
-/**
- * Exact initials derivation from the prototype's renderThumbnails:
- * first character of each word, joined, first two characters,
- * uppercased — e.g. "Subject A" → "SA", "Kurta — Slate" → "K—".
- */
-export function thumbnailInitials(label: string): string {
-  return label
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+export function getResultImage(gender: Gender, subjectId: string, garmentId: string): string | null {
+  const match = RESULTS.find(
+    (r) => r.gender === gender && r.subjectId === subjectId && r.garmentId === garmentId
+  );
+  return match ? match.resultImage : null;
 }

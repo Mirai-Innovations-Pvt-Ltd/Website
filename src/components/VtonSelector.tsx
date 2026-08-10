@@ -1,183 +1,190 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useState } from "react";
 import {
-  RESULTS,
-  garmentsFor,
-  subjectsFor,
-  thumbnailInitials,
-  type Gender,
+  Gender,
+  getGarments,
+  getResultImage,
+  getSubjects,
 } from "@/data/vton";
 
-interface SelectorState {
-  gender: Gender;
-  subject: string | null;
-  garment: string | null;
-}
-
-/* Mirrors the prototype's renderControls() coercion: whenever the
-   gender changes (or nothing is selected yet), subject/garment
-   fall back to the first available option for that gender. */
-function coerce(next: SelectorState): SelectorState {
-  const subjects = subjectsFor(next.gender);
-  const garments = garmentsFor(next.gender);
-  return {
-    gender: next.gender,
-    subject:
-      next.subject && subjects.includes(next.subject)
-        ? next.subject
-        : (subjects[0] ?? null),
-    garment:
-      next.garment && garments.includes(next.garment)
-        ? next.garment
-        : (garments[0] ?? null),
-  };
-}
-
-type Caption = { subject: string; garment: string } | "no-selection";
-
-/**
- * Interactive Selector (§5.1b) — "the most important component on
- * the site." State, thumbnails, and the result caption reproduce
- * the prototype's vanilla JS exactly, including the brief opacity
- * dip (90ms swap inside a 140ms CSS transition) on every update.
- */
 export default function VtonSelector() {
-  const [selection, setSelection] = useState<SelectorState>(() =>
-    coerce({ gender: "male", subject: null, garment: null }),
-  );
+  const [gender, setGender] = useState<Gender>("male");
+  const [subjectId, setSubjectId] = useState<string>("m1");
+  const [garmentId, setGarmentId] = useState<string>("m_g1");
 
-  /* The caption content is committed 90ms after the selection
-     changes (matching the prototype's setTimeout), so the CSS
-     opacity transition dips out and back in on each update.
-     `selection` is a fresh object on every pick — like the
-     prototype, re-picking the current option still re-runs the
-     dip. */
-  const [caption, setCaption] = useState<Caption | null>(null);
-  const [captionVisible, setCaptionVisible] = useState(false);
+  const [isRendering, setIsRendering] = useState<boolean>(false);
+  const [renderedImage, setRenderedImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    setCaptionVisible(false);
-    const match = RESULTS.find(
-      (r) =>
-        r.gender === selection.gender &&
-        r.subject === selection.subject &&
-        r.garment === selection.garment,
-    );
-    const timer = window.setTimeout(() => {
-      setCaption(
-        match
-          ? { subject: match.subject, garment: match.garment }
-          : "no-selection",
-      );
-      setCaptionVisible(true);
-    }, 90);
-    return () => window.clearTimeout(timer);
-  }, [selection]);
-
-  const subjects = subjectsFor(selection.gender);
-  const garments = garmentsFor(selection.gender);
-
-  function pickGender(gender: Gender) {
-    setSelection((prev) => coerce({ ...prev, gender }));
+  function handleGenderChange(nextGender: Gender) {
+    setGender(nextGender);
+    const subList = getSubjects(nextGender);
+    const garmList = getGarments(nextGender);
+    setSubjectId(subList[0]?.id ?? "m1");
+    setGarmentId(garmList[0]?.id ?? "m_g1");
+    setRenderedImage(null);
   }
 
-  function pickSubject(subject: string) {
-    setSelection((prev) => coerce({ ...prev, subject }));
+  function handleSubjectChange(id: string) {
+    setSubjectId(id);
+    setRenderedImage(null);
   }
 
-  function pickGarment(garment: string) {
-    setSelection((prev) => coerce({ ...prev, garment }));
+  function handleGarmentChange(id: string) {
+    setGarmentId(id);
+    setRenderedImage(null);
   }
+
+  function handleRender() {
+    setIsRendering(true);
+    const img = getResultImage(gender, subjectId, garmentId);
+    setTimeout(() => {
+      setIsRendering(false);
+      setRenderedImage(img);
+    }, 2000);
+  }
+
+  const activeSubjects = getSubjects(gender);
+  const activeGarments = getGarments(gender);
 
   return (
     <div className="container selector" id="try-it-on">
-      <div className="selector-header">
-        <p className="selector-label">Try it on Mirai Layer</p>
-        {/* Mandatory, persistent disclosure (§5.1b) — stays on screen
-            for as long as the component is visible. */}
-        <span className="selector-disclosure">
-          Sample results generated with the Mirai Layer engine
-        </span>
-      </div>
-
+      {/* The heading lives INSIDE the left column rather than above the
+          grid — that is what lets the renderer window start at the
+          heading's cap-height and run all the way to the bottom of the
+          garment row, so both columns share one top and one baseline. */}
       <div className="selector-body">
         <div className="selector-controls">
+          <div className="selector-header">
+            <h2 className="selector-title">Find your perfect fit</h2>
+          </div>
+
           <div className="gender-toggle" role="group" aria-label="Choose subject gender">
             <button
               type="button"
-              aria-pressed={selection.gender === "male"}
-              onClick={() => pickGender("male")}
+              className={gender === "male" ? "active" : ""}
+              aria-pressed={gender === "male"}
+              onClick={() => handleGenderChange("male")}
             >
               Male
             </button>
             <button
               type="button"
-              aria-pressed={selection.gender === "female"}
-              onClick={() => pickGender("female")}
+              className={gender === "female" ? "active" : ""}
+              aria-pressed={gender === "female"}
+              onClick={() => handleGenderChange("female")}
             >
               Female
             </button>
           </div>
 
           <div className="control-group">
-            <h3 id="subject-heading">Subject</h3>
-            <div className="thumbnail-row" role="group" aria-labelledby="subject-heading">
-              {subjects.map((label) => (
+            <h3>Select Model</h3>
+            <div className="subject-grid" role="group" aria-label="Select model">
+              {activeSubjects.map((sub) => (
                 <button
-                  key={label}
+                  key={sub.id}
                   type="button"
-                  className="thumbnail"
-                  aria-pressed={label === selection.subject}
-                  aria-label={label}
-                  onClick={() => pickSubject(label)}
+                  className={`subject-card ${sub.id === subjectId ? "selected" : ""}`}
+                  aria-pressed={sub.id === subjectId}
+                  onClick={() => handleSubjectChange(sub.id)}
                 >
-                  {thumbnailInitials(label)}
+                  <div className="subject-thumb-wrap">
+                    <Image
+                      src={sub.image}
+                      alt={sub.label}
+                      fill
+                      sizes="9rem"
+                      className="subject-thumb-img"
+                      style={
+                        sub.thumbPosition
+                          ? { objectPosition: sub.thumbPosition }
+                          : undefined
+                      }
+                    />
+                  </div>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="control-group">
-            <h3 id="garment-heading">Garment</h3>
-            <div className="thumbnail-row" role="group" aria-labelledby="garment-heading">
-              {garments.map((label) => (
+            <h3>Select Garment</h3>
+            <div className="garment-grid" role="group" aria-label="Select garment">
+              {activeGarments.map((garm) => (
                 <button
-                  key={label}
+                  key={garm.id}
                   type="button"
-                  className="thumbnail"
-                  aria-pressed={label === selection.garment}
-                  aria-label={label}
-                  onClick={() => pickGarment(label)}
+                  className={`garment-card ${garm.id === garmentId ? "selected" : ""}`}
+                  aria-pressed={garm.id === garmentId}
+                  onClick={() => handleGarmentChange(garm.id)}
                 >
-                  {thumbnailInitials(label)}
+                  <div className="garment-thumb-wrap">
+                    <Image
+                      src={garm.image}
+                      alt={garm.label}
+                      fill
+                      sizes="7.5rem"
+                      className="garment-thumb-img"
+                    />
+                  </div>
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        <figure className="result-frame" aria-live="polite">
-          <figcaption
-            className="result-frame-caption"
-            style={{ opacity: captionVisible ? 1 : 0 }}
-          >
-            {caption === null ? null : caption === "no-selection" ? (
-              <>
-                <strong>Select a subject and garment</strong>
-                Reserved result slot — pre-generated image will render here.
-              </>
+        {/* Renderer Window */}
+        <div className="renderer-box">
+          <div className="renderer-window">
+            {isRendering ? (
+              <div className="rendering-state">
+                <div className="render-spinner"></div>
+                <span className="rendering-text">Rendering your style</span>
+              </div>
+            ) : renderedImage ? (
+              /* Two layers of the same frame: a blurred, cover-cropped
+                 backdrop that fills the window edge to edge, and the
+                 result itself CONTAINED on top so the model is never
+                 cropped at the head or the hem — the window's height is
+                 driven by the controls column, so its ratio can't be
+                 matched to the photographs' and any cover-crop would
+                 cut a different part of each subject. */
+              <div className="rendered-result">
+                <Image
+                  src={renderedImage}
+                  alt=""
+                  aria-hidden="true"
+                  fill
+                  sizes="28rem"
+                  className="rendered-result-backdrop"
+                />
+                <Image
+                  src={renderedImage}
+                  alt="Try-on Result"
+                  fill
+                  sizes="28rem"
+                  className="rendered-result-img"
+                  priority
+                />
+              </div>
             ) : (
-              <>
-                <strong>
-                  {caption.subject} — {caption.garment}
-                </strong>
-                Reserved result slot — replace with the pre-generated image for
-                this combination.
-              </>
+              <div className="render-action-state">
+                <button
+                  type="button"
+                  className="btn-render-trigger"
+                  onClick={handleRender}
+                >
+                  <svg className="render-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
+                  </svg>
+                  <span>Render Try-On</span>
+                </button>
+              </div>
             )}
-          </figcaption>
-        </figure>
+          </div>
+        </div>
       </div>
     </div>
   );
