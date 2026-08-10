@@ -1,10 +1,10 @@
 import Image from "next/image";
 
 /* Institutional marks on the white band between the Hero and the
-   product band. Unlike the hero's 26px credential chips (greyscale
-   per §5.7), these render in each institution's own colours — the
-   band is a fixed white surface in both themes (same precedent as
-   the chips' fixed light background), so the marks' baked white
+   product band — the site's third-party validation (it replaced
+   the hero's in-column greyscale credential chips). Full colour,
+   an intentional §5.7 exception for this band only; the band is a
+   fixed white surface in both themes, so the marks' baked white
    backgrounds disappear into it. Files are the trimmed exports in
    public/images (see the README there). */
 const MARKS = [

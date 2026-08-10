@@ -90,7 +90,7 @@ the real asset and the styling/interaction is already correct.
 | --- | --- | --- |
 | ~~Screen recording~~ — **integrated** | `public/videos/try-on-demo.mp4`, `DemoVideo.tsx` | Done (630×1138 native, muted autoplay loop, no letterbox). Optional pre-launch: transcode the 20 MB file to ~2–3 Mbps H.264 and add a poster frame (needs ffmpeg). |
 | Selector result imagery | `VtonSelector.tsx` / `data/vton.ts` | Pre-generated image per combination in the result frame. |
-| ~~Credential logos~~ — **integrated** | `public/images/*.png` | Done — real DPIIT mark + V-Nest crest (white margins trimmed from the source exports; CSS renders them greyscale). |
+| ~~Credential logos~~ — **integrated** | `public/images/*.png`, `RecognitionStrip.tsx` | Done — real DPIIT + V-Nest + Startup India marks (white margins trimmed from the source exports), shown full-colour in the recognition strip below the hero. The hero's in-column greyscale chips and "No pricing · No waitlist" note were removed at the founder's direction. |
 | ~~Photowalk photos (×4)~~ — **integrated** | `public/images/photowalk/`, `BehindTheBuild.tsx` | Done. Captions kept verbatim from the prototype — reword in `PHOTOWALK_SLOTS` if they should describe the new photos more literally. |
 | ~~Team photos~~ — **integrated** | `TeamSection.tsx`, `public/images/team/` | Done: group photograph + all three founder headshots. |
 | ~~Team LinkedIn URLs~~ — **integrated** | `data/team.ts` | Done — all three real profile URLs in place. Launch QA (§5.2): confirm each profile lists Mirai as current employment. |

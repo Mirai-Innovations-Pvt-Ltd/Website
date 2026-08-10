@@ -663,127 +663,6 @@ button { font: inherit; }
   max-width: 40rem;
 }
 
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-5);
-}
-
-.hero-actions-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4em;
-  font-size: 0.75rem;
-  letter-spacing: 0.03em;
-  color: var(--color-ink-muted);
-}
-
-/* ============================================
-   RESPONSIVE
-   ============================================ */
-@media (max-width: 480px) {
-  .hero-actions { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
-}
-
-/* ============================================
-   HERO CREDENTIALS
-   §5.7: the site's only third-party validation.
-   Deliberately understated — smaller type, no card
-   containers, no badge styling, no separate section of
-   its own. Lives inside the Hero, directly under the CTA
-   note, so it reads as part of the same opening statement
-   ("no pricing, no waitlist — and DPIIT-recognised") rather
-   than a separate institutional banner bolted on below it.
-   ============================================ */
-.hero-credentials {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-5);
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--color-line);
-  /* Pushes this row to the bottom of the (row-height)
-     content column via leftover flex space, so it lands
-     level with "Mirai Layer, on the shop floor" under the
-     video — the two natural stopping points on either side
-     of the Hero. */
-  margin-top: auto;
-}
-
-/* Plain content, no button/card read at all — icon + text
-   pairing only, colored the same muted tone as the hero
-   subhead so it sits quietly under the CTA instead of
-   competing with it. */
-.credential-item {
-  transition: color var(--duration-base) var(--ease-standard);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  text-decoration: none;
-  color: var(--color-ink-muted);
-}
-
-a.credential-item:hover,
-a.credential-item:focus-visible {
-  color: var(--color-ink);
-}
-a.credential-item:hover .credential-logo,
-a.credential-item:focus-visible .credential-logo {
-  border-color: var(--color-ink-muted);
-}
-
-/* Logo slots — reserved at fixed dimensions per §5.5's
-   "reserve the slot" principle, same as the Hero's video
-   panel. Real DPIIT recognition mark and V-Nest incubation
-   crest, rendered greyscale / single-colour per §5.7 so
-   each institution's own brand colours (navy/magenta,
-   red/black) never compete with the page. */
-.credential-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.625rem;
-  height: 1.625rem;
-  flex-shrink: 0;
-  border-radius: 50%;
-  border: 1px solid var(--color-line);
-  background: var(--color-canvas);
-  overflow: hidden;
-  transition: border-color var(--duration-base) var(--ease-standard);
-}
-
-.credential-logo img {
-  width: 68%;
-  height: 68%;
-  object-fit: contain;
-  filter: grayscale(1) contrast(1.05);
-  opacity: 0.75;
-}
-
-.credential-text {
-  font-size: 0.8125rem;
-  line-height: 1.35;
-  letter-spacing: var(--tracking-normal);
-}
-
-.credential-divider {
-  align-self: center;
-  width: 1px;
-  height: 1.25rem;
-  background: var(--color-line);
-  flex-shrink: 0;
-}
-
-@media (max-width: 480px) {
-  .hero-credentials {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-4);
-  }
-  .credential-divider { display: none; }
-}
-
 /* ============================================
    HERO SLIDESHOW (full-bleed backdrop)
    Second pass on the founder's direction: the three in-situ
@@ -969,39 +848,6 @@ a.credential-item:focus-visible .credential-logo {
   color: rgba(232, 232, 236, 0.74);
 }
 
-.hero-actions-note {
-  color: rgba(232, 232, 236, 0.66);
-}
-
-.hero-credentials {
-  border-top-color: rgba(255, 255, 255, 0.24);
-}
-
-.hero .credential-item {
-  color: rgba(232, 232, 236, 0.68);
-}
-
-a.credential-item:hover,
-a.credential-item:focus-visible {
-  color: #FFFFFF;
-}
-
-a.credential-item:hover .credential-logo,
-a.credential-item:focus-visible .credential-logo {
-  border-color: rgba(255, 255, 255, 0.6);
-}
-
-/* Fixed light chip in both themes so the greyscale marks
-   stay visible over the photograph. */
-.credential-logo {
-  border-color: rgba(255, 255, 255, 0.3);
-  background: #FAFAF9;
-}
-
-.credential-divider {
-  background: rgba(255, 255, 255, 0.28);
-}
-
 /* ============================================
    RECOGNITION STRIP
    White band between the Hero and the product band
@@ -1018,18 +864,34 @@ a.credential-item:focus-visible .credential-logo {
    would vanish on this white band.
    ============================================ */
 .recognition-strip {
+  /* The band's height is the constant, not the padding: marks and
+     padding trade against each other so the strip always occupies
+     the same 9.25rem regardless of --mark-height. Retune the mark
+     size alone and the band stays put. */
+  --mark-height: 5rem;
+  --band-height: 9.25rem;
+
   background: #FFFFFF;
   border-top: 1px solid #E2E1DA;
   border-bottom: 1px solid #E2E1DA;
-  padding: var(--space-7) 0;
+  padding: calc((var(--band-height) - var(--mark-height)) / 2) 0;
 }
 
+/* space-evenly, not centre: three marks totalling ~410px in a
+   1137px row read as a cluster stranded mid-band when centred.
+   Even distribution lets them hold the full width.
+
+   Column gap is deliberately 0 — any column gap would stack on
+   top of the distributed space, making the gaps BETWEEN marks
+   wider than the ones at the ends. At 0 all four come out equal.
+   Wrapping only happens below 640px, where the media query
+   restores a real gap. */
 .recognition-strip-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-evenly;
   flex-wrap: wrap;
-  gap: var(--space-6) var(--space-8);
+  gap: var(--space-6) 0;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1037,17 +899,21 @@ a.credential-item:focus-visible .credential-logo {
 
 .recognition-strip-row img {
   display: block;
-  height: 3.25rem;
+  height: var(--mark-height);
   width: auto;
 }
 
+/* Wrapping is expected here, so the band grows past --band-height
+   and centring beats even distribution on a ragged last row. */
 @media (max-width: 640px) {
-  .recognition-strip-row {
-    gap: var(--space-5) var(--space-6);
+  .recognition-strip {
+    --mark-height: 3.5rem;
+    padding: var(--space-6) 0;
   }
 
-  .recognition-strip-row img {
-    height: 2.5rem;
+  .recognition-strip-row {
+    justify-content: center;
+    gap: var(--space-5) var(--space-6);
   }
 }
 

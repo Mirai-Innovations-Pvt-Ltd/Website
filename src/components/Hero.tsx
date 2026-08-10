@@ -44,37 +44,6 @@ export default function Hero() {
               themselves, and buys with confidence — no more guessing from a
               hanger.
             </p>
-
-            <div className="hero-actions" role="group" aria-label="Primary action">
-              <span className="hero-actions-note">No pricing · No waitlist</span>
-            </div>
-
-            <div className="hero-credentials" aria-label="Credentials">
-              <a
-                className="credential-item"
-                href="https://www.startupindia.gov.in/content/sih/en/search.html"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className="credential-logo" aria-hidden="true">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- 26px static credential mark; exact prototype rendering (CSS grayscale filter) on a plain <img> */}
-                  <img src="/images/dpiit-mark.png" alt="" width={26} height={26} loading="lazy" />
-                </span>
-                <span className="credential-text">DPIIT Recognised · DIPP243441</span>
-              </a>
-
-              <span className="credential-divider" aria-hidden="true"></span>
-
-              <span className="credential-item">
-                <span className="credential-logo" aria-hidden="true">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- 26px static credential mark; exact prototype rendering (CSS grayscale filter) on a plain <img> */}
-                  <img src="/images/vnest-mark.png" alt="" width={26} height={26} loading="lazy" />
-                </span>
-                <span className="credential-text">
-                  Incubated at V-Nest Technology Business Incubator, VIT Chennai
-                </span>
-              </span>
-            </div>
           </div>
         </div>
       </div>
