@@ -57,8 +57,6 @@ export default function Hero() {
                 rel="noopener noreferrer"
               >
                 <span className="credential-logo" aria-hidden="true">
-                  {/* Reserved slot: replace public/images/dpiit-mark.png with the
-                      real DPIIT recognition mark (rendered greyscale via CSS). */}
                   {/* eslint-disable-next-line @next/next/no-img-element -- 26px static credential mark; exact prototype rendering (CSS grayscale filter) on a plain <img> */}
                   <img src="/images/dpiit-mark.png" alt="" width={26} height={26} loading="lazy" />
                 </span>
@@ -69,8 +67,6 @@ export default function Hero() {
 
               <span className="credential-item">
                 <span className="credential-logo" aria-hidden="true">
-                  {/* Reserved slot: replace public/images/vnest-mark.png with the
-                      real V-Nest incubation crest (rendered greyscale via CSS). */}
                   {/* eslint-disable-next-line @next/next/no-img-element -- 26px static credential mark; exact prototype rendering (CSS grayscale filter) on a plain <img> */}
                   <img src="/images/vnest-mark.png" alt="" width={26} height={26} loading="lazy" />
                 </span>

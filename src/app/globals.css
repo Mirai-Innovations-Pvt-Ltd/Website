@@ -23,9 +23,11 @@
 /* ============================================
    DESIGN TOKENS
 
-   Gradient budget is spent in exactly two places
-   in this entire file: the nav-mark accent dot,
-   and the primary CTA. Nowhere else. (§7.3)
+   Gradient budget is spent in exactly one place
+   in this entire file: the primary CTA. Nowhere
+   else. (§7.3) The header brand is the full-colour
+   wordmark SVG (its gradients are baked into the
+   asset, not drawn from these tokens).
 
    Canvas stays light throughout — the Hero is LIGHT
    per §7.2's explicit section map. Atmosphere below
@@ -354,18 +356,26 @@ button { font: inherit; }
   color: var(--color-ink);
 }
 
-/* One of two total uses of the accent gradient sitewide (§7.3).
-   Nudged up 1px relative to the text baseline — a small dot
-   next to capital-height text optically wants to sit slightly
-   above center, not dead-center, to feel anchored rather than
-   sunken. */
-.nav-mark-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--gradient-accent);
-  flex-shrink: 0;
-  transform: translateY(-1px);
+/* Brand wordmark (inline SVG, see MiraiWordmark.tsx). Sized by
+   height so it tracks the nav's optical scale; width follows
+   the 751:292 viewBox. */
+.nav-mark-logo {
+  height: 1.5rem;
+  width: auto;
+  aspect-ratio: 751 / 292;
+  display: block;
+}
+
+/* The export's six linear gradients end in default-black stops —
+   correct on the light canvas, invisible on the dark one. Dark
+   mode swaps ONLY those stops to the theme ink; every coloured
+   brand stop is shared between themes. */
+.nav-mark-logo .wordmark-stop-deep {
+  stop-color: #000;
+}
+
+[data-theme="dark"] .nav-mark-logo .wordmark-stop-deep {
+  stop-color: var(--color-ink);
 }
 
 .nav-links {
@@ -993,6 +1003,55 @@ a.credential-item:focus-visible .credential-logo {
 }
 
 /* ============================================
+   RECOGNITION STRIP
+   White band between the Hero and the product band
+   carrying the full-colour institutional marks
+   (DPIIT / V-Nest / Startup India). Deliberately a
+   FIXED white surface in both themes — the marks'
+   source files have baked white backgrounds, and the
+   hero chips already set the "fixed light surface in
+   dark mode" precedent. Colours here are the
+   institutions' own (an intentional §5.7 exception
+   for this band only; the 26px chips stay greyscale).
+   Hardcoded border colour for the same reason: the
+   dark theme's --color-line is white-on-dark and
+   would vanish on this white band.
+   ============================================ */
+.recognition-strip {
+  background: #FFFFFF;
+  border-top: 1px solid #E2E1DA;
+  border-bottom: 1px solid #E2E1DA;
+  padding: var(--space-7) 0;
+}
+
+.recognition-strip-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-6) var(--space-8);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recognition-strip-row img {
+  display: block;
+  height: 3.25rem;
+  width: auto;
+}
+
+@media (max-width: 640px) {
+  .recognition-strip-row {
+    gap: var(--space-5) var(--space-6);
+  }
+
+  .recognition-strip-row img {
+    height: 2.5rem;
+  }
+}
+
+/* ============================================
    PRODUCT BAND
    §7.2 / §5.1: the dark zone housing the screen
    recording, interactive selector, and screenshots as
@@ -1562,19 +1621,20 @@ a.credential-item:focus-visible .credential-logo {
 }
 
 /* ---- Photowalk ----
-   Reserved slots for real photography from the build —
-   hardware, install day, the team, the kiosk in situ.
-   Rounded corners (radius-lg) mark these deliberately as
-   PHOTOGRAPHS rather than interface captures — everywhere
-   else in the file that shows the product itself (video,
-   result frame, screenshots) is sharp-cornered on purpose,
-   so a photo gallery reads as a distinct, softer register:
-   documentary evidence of the build, not the product UI. */
+   Four EQUAL frames of real photography from the build —
+   hardware, install day, the team, planning. (The prototype's
+   featured wide tile was retired with its image; no tile
+   outranks the others now.) Rounded corners (radius-lg) mark
+   these deliberately as PHOTOGRAPHS rather than interface
+   captures — everywhere else in the file that shows the
+   product itself (video, result frame, screenshots) is
+   sharp-cornered on purpose, so a photo gallery reads as a
+   distinct, softer register: documentary evidence of the
+   build, not the product UI. */
 .photowalk-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-auto-rows: 14rem;
-  grid-auto-flow: row dense;
   gap: var(--space-4);
 }
 
@@ -1615,26 +1675,16 @@ a.credential-item:focus-visible .credential-logo {
   color: var(--color-device-text);
 }
 
-.photowalk-item--wide {
-  grid-column: span 3;
-}
-
 @media (max-width: 860px) {
   .photowalk-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-auto-rows: 12rem;
-  }
-  .photowalk-item--wide {
-    grid-column: span 2;
   }
 }
 
 @media (max-width: 560px) {
   .photowalk-grid {
     grid-template-columns: 1fr;
-  }
-  .photowalk-item--wide {
-    grid-column: span 1;
   }
 }
 

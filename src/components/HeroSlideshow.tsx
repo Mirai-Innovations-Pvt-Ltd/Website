@@ -25,7 +25,7 @@ const SLIDES: Slide[] = [
   },
 ];
 
-const AUTOPLAY_INTERVAL_MS = 5000;
+const AUTOPLAY_INTERVAL_MS = 2000;
 
 /**
  * Full-bleed slideshow behind the hero copy. Renders as an

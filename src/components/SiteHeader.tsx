@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MiraiWordmark from "@/components/MiraiWordmark";
 import ThemeToggle from "@/components/ThemeToggle";
 
 /* Section anchors are written as "/#…" (rather than the
@@ -17,9 +18,8 @@ export default function SiteHeader() {
     <header className="site-header">
       <div className="container">
         <nav className="nav" aria-label="Primary">
-          <Link className="nav-mark" href="/">
-            <span className="nav-mark-dot" aria-hidden="true"></span>
-            Mirai
+          <Link className="nav-mark" href="/" aria-label="Mirai — home">
+            <MiraiWordmark />
           </Link>
 
           <ul className="nav-links">
