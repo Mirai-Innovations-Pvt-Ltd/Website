@@ -1,32 +1,14 @@
 import type { Metadata } from "next";
+import LegalDocument from "@/components/LegalDocument";
+import { TERMS } from "@/data/legal";
 
 export const metadata: Metadata = {
   title: "Terms of Use — Mirai Innovations",
+  description:
+    "The terms that apply to your use of the Mirai Innovations website.",
 };
 
-/* Reserved-slot page: the prototype's footer links to /terms on
-   every page (§5.3), and §5.6 forbids dead links — so the route
-   exists, clearly marked as pending the real legal document. */
+/* See the note in src/app/privacy/page.tsx — same arrangement. */
 export default function TermsPage() {
-  return (
-    <section className="legal-page">
-      <div className="container">
-        <h1>Terms of Use</h1>
-        <div className="legal-reserved">
-          <p>
-            <strong>Reserved</strong> — the Terms of Use for Mirai Innovations
-            Private Limited are being prepared and will be published on this
-            page.
-          </p>
-          <p>
-            Until then, questions can be sent to{" "}
-            <a href="mailto:hello@miraiinnovations.tech">
-              hello@miraiinnovations.tech
-            </a>
-            .
-          </p>
-        </div>
-      </div>
-    </section>
-  );
+  return <LegalDocument doc={TERMS} />;
 }

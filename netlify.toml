@@ -1,0 +1,22 @@
+# Netlify build configuration.
+#
+# This is a Next.js App Router site, so it is published through the
+# Next.js runtime plugin below rather than as a plain static folder —
+# that plugin turns `next build` output into Netlify's CDN assets and
+# functions automatically. `publish` is therefore `.next`, not `out`.
+#
+# The contact form is handled by Netlify Forms; the declaration
+# Netlify's detector reads at deploy time is public/__forms.html.
+# There are no secrets or environment variables to configure — the
+# notification recipient is set in the Netlify UI under
+# Forms > Form notifications.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

@@ -56,9 +56,38 @@
   );
   --color-focus: #8B5CF6;
 
+  /* ============================================
+     FAMILIES
+
+     Space Grotesk is now the page's voice, not just
+     its headline face — the founder's call, and the
+     right one for a page built almost entirely out
+     of short strings: headings, labels, nav, buttons,
+     names, captions. One family reads as designed;
+     two families split across strings this short read
+     as unresolved.
+
+     Inter is kept for exactly the places where the
+     trade actually bites. Space Grotesk is a
+     geometric display grotesque: tight apertures,
+     near-circular bowls, low stroke contrast. Those
+     are the features that make it distinctive at
+     32px and that measurably slow reading at 15px
+     over sustained multi-line copy — and they also
+     make it a poor choice for text a user must
+     proof-read as they type. So --font-reading holds
+     the line on the legal pages and the contact
+     form's inputs, and nowhere else.
+     ============================================ */
   --font-display: var(--font-space-grotesk), "Helvetica Neue", Arial, sans-serif;
-  --font-body: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
+  --font-body: var(--font-display);
+  --font-reading: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-jetbrains-mono), "SF Mono", Menlo, monospace;
+
+  /* Single source of truth for the sticky header's height: the
+     header sets it, the hero subtracts it to fill exactly one
+     viewport, and the scroll-margin offsets are derived from it. */
+  --header-height: 4.5rem;
 
   /* Named tracking scale — replaces six previously
      scattered, near-identical letter-spacing values with
@@ -121,6 +150,10 @@
      prefers-reduced-motion via the existing guard.
      ============================================ */
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Decelerating curve with no overshoot — quick to arrive, then
+     settles. Used by the hover overlays, where a bounce would read
+     as playful rather than precise. */
+  --ease-out-quick: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-fast: 140ms;
   --duration-base: 200ms;
 
@@ -195,7 +228,7 @@ html {
 #product,
 #behind-the-build,
 #team {
-  scroll-margin-top: 88px;
+  scroll-margin-top: calc(var(--header-height) + var(--space-4));
 }
 body {
   margin: 0;
@@ -360,6 +393,10 @@ button { font: inherit; }
   position: sticky;
   top: 0;
   z-index: 50;
+  /* Height INCLUDES the hairline (border-box is global), so the hero's
+     calc(100svh - var(--header-height)) lands the fold on the exact
+     pixel rather than one past it. */
+  height: var(--header-height);
   border-bottom: 1px solid var(--color-line);
   background: rgba(250, 250, 249, 0.72);
   backdrop-filter: blur(14px) saturate(160%);
@@ -370,12 +407,24 @@ button { font: inherit; }
   background: rgba(10, 11, 14, 0.68);
 }
 
+/* The nav's `height: 100%` needs a parent with a resolved height to
+   measure against — .container is auto-height, so without this the
+   percentage fell back to auto, the nav collapsed to its 44px content
+   height, and the whole bar sat at the top of the 72px header instead
+   of centred in it. */
+.site-header > .container {
+  height: 100%;
+}
+
 .nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-5);
-  padding-block: 0.625rem;
+  /* Fixed height rather than padding-derived: the hero subtracts
+     this exact value to fill one viewport, so it can't be allowed
+     to drift when the wordmark or a nav item changes size. */
+  height: 100%;
 }
 
 .nav-mark {
@@ -394,7 +443,7 @@ button { font: inherit; }
    height so it tracks the nav's optical scale; width follows
    the 751:292 viewBox. */
 .nav-mark-logo {
-  height: 1.5rem;
+  height: 2rem;
   width: auto;
   aspect-ratio: 751 / 292;
   display: block;
@@ -705,11 +754,21 @@ button { font: inherit; }
    original padding-block still provides the text's breathing
    room; min-height gives the photograph its presence (svh
    line overrides vh where supported). */
+/* The photograph runs to the bottom edge of the first screen: the
+   hero takes the whole viewport minus the sticky header it sits
+   under, so the recognition strip lands exactly at the fold and is
+   only reached by scrolling. svh (the small viewport height) is the
+   correct unit here rather than vh — on mobile, vh measures the
+   viewport with the browser chrome RETRACTED, which would push the
+   strip a chrome's height below the fold and leave the hero
+   scrolling before anything else appeared. The vh line is the
+   fallback for engines without svh. The floor keeps the composition
+   from collapsing on a very short window. */
 .hero {
   display: flex;
   align-items: flex-end;
-  min-height: clamp(30rem, 78vh, 44rem);
-  min-height: clamp(30rem, 78svh, 44rem);
+  min-height: max(32rem, calc(100vh - var(--header-height)));
+  min-height: max(32rem, calc(100svh - var(--header-height)));
 }
 
 /* Sits above the atmosphere layers and the noise (same
@@ -1173,6 +1232,7 @@ button { font: inherit; }
 
 .subject-card {
   appearance: none;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1226,6 +1286,7 @@ button { font: inherit; }
 
 .garment-card {
   appearance: none;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1261,6 +1322,106 @@ button { font: inherit; }
 .garment-thumb-img {
   object-fit: cover;
   object-position: top center;
+}
+
+/* ---- Card hover: frosted zoom overlay ----
+   Hovering (or keyboard-focusing) a subject or garment card lifts a
+   larger, frosted plate of the SAME card above the row, holding a
+   magnified crop of its image. It reads as the card itself growing
+   rather than as a tooltip appearing next to it, which is why the
+   plate is centred on the card and scales up from just under full
+   size instead of sliding in from anywhere.
+
+   Two details carry the "premium" read and neither is optional:
+   the plate is glass (a real backdrop blur over whatever it covers,
+   with a bright hairline on top and a long, soft shadow under), and
+   the easing is a quick ease-OUT — fast to arrive, settling rather
+   than bouncing. Everything is pointer-events: none so the overlay
+   can never eat the click that selects the card, and the whole
+   thing is aria-hidden in the markup: it shows the same image the
+   card already labels, so announcing it twice would be noise. */
+.card-zoom {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  width: 152%;
+  height: 148%;
+  translate: -50% -50%;
+  padding: 0.5rem;
+  border-radius: calc(var(--radius-lg) + 4px);
+  background: rgba(250, 250, 249, 0.62);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 28px 56px -20px rgba(18, 19, 25, 0.45),
+    0 2px 8px -2px rgba(18, 19, 25, 0.2);
+  opacity: 0;
+  scale: 0.9;
+  pointer-events: none;
+  transition:
+    opacity 150ms var(--ease-out-quick),
+    scale 220ms var(--ease-out-quick);
+}
+
+[data-theme="dark"] .card-zoom {
+  background: rgba(20, 21, 26, 0.62);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.card-zoom-frame {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #EBEAE4;
+}
+
+.card-zoom-frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  /* The magnification itself. It starts already slightly enlarged
+     so the crop never flashes at 1:1 mid-transition. */
+  scale: 1.14;
+  transition: scale 320ms var(--ease-out-quick);
+}
+
+.subject-card:hover .card-zoom,
+.subject-card:focus-visible .card-zoom,
+.garment-card:hover .card-zoom,
+.garment-card:focus-visible .card-zoom {
+  opacity: 1;
+  scale: 1;
+}
+
+.subject-card:hover .card-zoom-frame img,
+.subject-card:focus-visible .card-zoom-frame img,
+.garment-card:hover .card-zoom-frame img,
+.garment-card:focus-visible .card-zoom-frame img {
+  scale: 1.28;
+}
+
+/* The hovered card has to out-stack its neighbours, or the next
+   card in the row paints over the overlay's right edge. */
+.subject-card:hover,
+.subject-card:focus-visible,
+.garment-card:hover,
+.garment-card:focus-visible {
+  z-index: 4;
+}
+
+/* Coarse pointers have no hover state to preview with — the plate
+   would only ever appear mid-tap, on top of the thing being
+   tapped. */
+@media (hover: none) {
+  .card-zoom { display: none; }
 }
 
 /* Renderer Window Box (Frosted Black Window) */
@@ -1506,8 +1667,9 @@ button { font: inherit; }
 }
 
 .btb-header {
-  margin-bottom: var(--space-8);
-  max-width: 42rem;
+  margin: 0 auto var(--space-8);
+  max-width: 44rem;
+  text-align: center;
 }
 
 .btb-header h2 {
@@ -1564,9 +1726,9 @@ button { font: inherit; }
   box-shadow: 0 24px 40px -20px rgba(18, 19, 25, 0.18);
 }
 
-[data-theme="dark"] .photowalk-note {
-  color: rgba(18, 19, 25, 0.72);
-}
+/* The note card is deliberately theme-independent — a light plate
+   with black text in both modes, like the photographs it sits
+   beside. No dark-mode override belongs here. */
 
 /* ---- Photowalk ----
    Four EQUAL frames of real photography from the build. Rounded
@@ -1585,11 +1747,23 @@ button { font: inherit; }
    panel beside the photograph carrying that tile's note. Nothing
    is hidden from assistive tech: the note is real text in the
    DOM at all times, only its container's width animates. */
+.photowalk-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Two tiles per row, 27rem tall. That height is chosen against the
+   photographs, not picked for looks: they are all 1.33-1.46
+   landscape frames, and at two-up a tile is ~636px wide, so 27rem
+   (432px) puts the frame at 1.47 — near enough that `cover` trims
+   under a tenth of each image instead of the third it was losing at
+   four-up. */
 .photowalk-row {
   display: flex;
   align-items: stretch;
   gap: var(--space-4);
-  height: 21rem;
+  height: 27rem;
 }
 
 .photowalk-item {
@@ -1613,15 +1787,24 @@ button { font: inherit; }
 
 /* Siblings yield first (the row-level rule), then the active tile
    claims the space (the tile-level rule wins on specificity). */
+/* Tuned for two-up: at 2.0 / 0.7 the hovered tile's PHOTOGRAPH
+   still ends up wider than it was at rest even after the note panel
+   has taken its 15rem — which is the whole point, and is not true
+   at the gentler ratios that worked when there were four tiles
+   sharing the row. */
 .photowalk-row:hover .photowalk-item,
 .photowalk-row:focus-within .photowalk-item {
-  flex-grow: 0.65;
+  flex-grow: 0.7;
 }
 
+/* Black at the edge of the parent frame: once the white half is open,
+   the tile encloses a photograph AND a light panel, so the frame has
+   to be a stroke dark enough to bound both. The light hairline used
+   at rest would vanish against the white. */
 .photowalk-item:hover,
 .photowalk-item:focus-visible {
-  flex-grow: 2.4;
-  border-color: rgba(255, 255, 255, 0.36);
+  flex-grow: 2;
+  border-color: #121319;
   background: rgba(255, 255, 255, 0.06);
   box-shadow: 0 24px 40px -20px rgba(0, 0, 0, 0.55);
 }
@@ -1648,26 +1831,34 @@ button { font: inherit; }
 }
 
 /* Collapsed to zero width at rest — the text is still in the
-   accessibility tree, it simply has no room. The inner span is
-   pinned to the panel's open width so the copy doesn't reflow
-   line by line while the panel animates. */
+   accessibility tree, it simply has no room. The outer element is
+   the clipping track whose width animates; the inner span is the
+   card itself, pinned to the open width so the copy doesn't reflow
+   line by line while the track opens. */
 .photowalk-note {
-  --note-width: 17rem;
+  --note-width: 16rem;
   flex: 0 0 0;
   overflow: hidden;
   display: flex;
+  /* Centres the copy in the full height of the white panel. */
   align-items: center;
+  background: #FAFAF9;
   opacity: 0;
-  color: rgba(232, 232, 236, 0.78);
   transition:
     flex-basis 420ms var(--ease-standard),
     opacity 240ms var(--ease-standard);
 }
 
+/* The revealed area is a solid white extension of the photograph —
+   it runs the full height of the tile and butts straight up against
+   the image, so the two read as one framed object rather than as a
+   card floating on a panel. The tile's own black border (below) is
+   what encloses both halves. */
 .photowalk-note span {
   display: block;
   width: var(--note-width);
-  padding: var(--space-5);
+  padding: var(--space-6);
+  color: #121319;
   font-size: 0.9375rem;
   line-height: 1.6;
   letter-spacing: var(--tracking-normal);
@@ -1681,30 +1872,35 @@ button { font: inherit; }
   transition-delay: 0ms, 120ms;
 }
 
-/* Touch and narrow viewports get no hover, so the filmstrip
-   unstacks into rows that show photograph and note side by side
-   permanently — same information, no interaction required. */
-@media (max-width: 900px) {
+/* Below two-up the tiles would be narrower than they are tall and
+   the note would take more room than the photograph, so the pairs
+   unstack into full-width rows that show photograph and note side
+   by side permanently — same information, no hover required, which
+   is also what touch needs. */
+@media (max-width: 880px) {
   .photowalk-row {
     flex-direction: column;
     height: auto;
-    gap: var(--space-5);
+    gap: var(--space-4);
   }
 
+  /* The white panel is permanently open here, so the frame carries
+     the dark stroke at rest too. */
   .photowalk-item,
   .photowalk-row:hover .photowalk-item,
   .photowalk-row:focus-within .photowalk-item,
   .photowalk-item:hover,
   .photowalk-item:focus-visible {
     flex: none;
-    height: 13rem;
+    height: 15rem;
     cursor: default;
+    border-color: #121319;
   }
 
   .photowalk-note,
   .photowalk-item:hover .photowalk-note {
     --note-width: 100%;
-    flex: 0 0 46%;
+    flex: 0 0 42%;
     opacity: 1;
   }
 
@@ -1732,7 +1928,8 @@ button { font: inherit; }
   }
 
   .photowalk-note span {
-    padding: var(--space-4) var(--space-5) var(--space-5);
+    width: auto;
+    padding: var(--space-5);
   }
 }
 
@@ -1766,22 +1963,47 @@ button { font: inherit; }
   text-wrap: balance;
 }
 
-/* The replacement founders' photograph is near-square, not
-   panoramic — a full-width 21:9 frame would have cropped it to a
-   letterbox slice of three torsos. It sits centred at a
-   portrait-friendly width instead, in a 5:4 frame anchored high so
-   the faces clear the crop. */
+/* ---- Team: one composition ----
+   The photograph holds the centre column; two round profiles orbit
+   each side. Deliberately NOT a photo-then-grid stack: the section
+   is about four people and one room, and splitting it into two
+   blocks made the profiles read as an appendix to the photo. */
+.team-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 34rem) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: center;
+}
+
+.team-orbit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.team-orbit--left { align-items: flex-end; }
+.team-orbit--right { align-items: flex-start; }
+
+/* The "back and forth": each card is nudged off its column's axis in
+   both directions, and the two sides are nudged in opposite senses,
+   so no two of the four profiles sit on a shared line. Small values
+   on purpose — enough to break the grid, not enough to read as
+   misalignment. */
+.team-orbit .team-card:nth-child(1) { --nudge-x: -1.75rem; --nudge-y: -1.25rem; }
+.team-orbit .team-card:nth-child(2) { --nudge-x: 1.5rem; --nudge-y: 1.25rem; }
+.team-orbit--right .team-card:nth-child(1) { --nudge-x: 1.75rem; }
+.team-orbit--right .team-card:nth-child(2) { --nudge-x: -1.5rem; }
+
 .team-group-photo {
   width: 100%;
-  max-width: 44rem;
   aspect-ratio: 5 / 4;
   background: var(--color-canvas-raised);
-  border: 1px dashed var(--color-line);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto var(--space-8);
+  margin: 0;
 }
 
 .team-group-photo-label {
@@ -1789,39 +2011,39 @@ button { font: inherit; }
   color: var(--color-ink-muted);
 }
 
-.team-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-6);
-}
-
 .team-card {
-  transition: transform 320ms var(--ease-standard);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 11.5rem;
+  transform: translate(var(--nudge-x, 0), var(--nudge-y, 0));
+  transition: transform 320ms var(--ease-out-quick);
 }
 
 .team-card:hover {
-  transform: translateY(-4px);
+  transform: translate(var(--nudge-x, 0), calc(var(--nudge-y, 0) - 0.375rem));
 }
 
 .team-photo {
   aspect-ratio: 1;
+  width: 9.5rem;
   background: var(--color-canvas-raised);
-  border: 1px dashed var(--color-line);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: var(--space-4);
   overflow: hidden;
   transition:
-    border-color 320ms var(--ease-standard),
-    box-shadow 320ms var(--ease-standard);
+    border-color 320ms var(--ease-out-quick),
+    box-shadow 320ms var(--ease-out-quick);
 }
 
 .team-card:hover .team-photo {
-  border-style: solid;
   border-color: var(--color-ink-muted);
-  box-shadow: 0 16px 32px -20px rgba(18, 19, 25, 0.35);
+  box-shadow: 0 18px 34px -18px rgba(18, 19, 25, 0.42);
 }
 
 .team-photo span {
@@ -1891,13 +2113,44 @@ button { font: inherit; }
   transform: translateX(2px);
 }
 
-@media (max-width: 780px) {
-  .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .team-group-photo { aspect-ratio: 1; }
+/* Below the three-column composition the orbit becomes a plain row
+   under the photograph, and the nudges are zeroed — off-axis
+   placement only reads as intentional when there is an axis to be
+   off. */
+@media (max-width: 1000px) {
+  .team-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+    justify-items: center;
+  }
+
+  .team-group-photo {
+    order: 1;
+    max-width: 34rem;
+  }
+
+  .team-orbit {
+    order: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: var(--space-6);
+  }
+
+  .team-orbit--right { order: 3; }
+
+  .team-orbit .team-card,
+  .team-orbit--right .team-card {
+    --nudge-x: 0;
+    --nudge-y: 0;
+  }
 }
 
-@media (max-width: 480px) {
-  .team-grid { grid-template-columns: 1fr; }
+@media (max-width: 640px) {
+  .team-group-photo { aspect-ratio: 1; }
+  .team-card { width: 9rem; }
+  .team-photo { width: 8rem; }
 }
 
 /* ---- Team: founder headshots (filled slots) ----
@@ -1951,25 +2204,50 @@ button { font: inherit; }
    could be lifted into a shared component later without
    rework).
    ============================================ */
+/* The closing section carries the page's single conversion, so it is
+   scaled up rather than left at the same weight as the sections
+   above it: the heading runs at statement size, the form is wider,
+   and every control is taller and set larger. */
 .contact {
-  padding-block: var(--space-9);
+  padding-block: calc(var(--space-9) + var(--space-6));
+  /* Hairline rule marking the start of the closing section — Team
+     above it sits on the same canvas with no other separator. Inset to
+     the container so it reads as a rule, not a full-bleed band. */
+  position: relative;
+}
+
+.contact::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  /* Matches the container's content box exactly at every width, so the
+     rule lines up with the copy under it rather than running to the
+     viewport edges. */
+  width: min(
+    calc(100% - 2 * var(--container-pad)),
+    calc(var(--container-max) - 2 * var(--container-pad))
+  );
+  height: 1px;
+  background: var(--color-line);
 }
 
 .contact-inner h2 {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: var(--type-section);
-  line-height: 1.18;
-  letter-spacing: var(--tracking-snug);
+  font-size: var(--type-statement);
+  line-height: 1.14;
+  letter-spacing: var(--tracking-tight);
   color: var(--color-ink);
-  margin: 0 0 var(--space-6);
+  margin: 0 0 var(--space-7);
 }
 
 .contact-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  max-width: 30rem;
+  gap: var(--space-5);
+  max-width: 38rem;
 }
 
 .form-field {
@@ -1978,21 +2256,33 @@ button { font: inherit; }
   gap: var(--space-2);
 }
 
+/* Honeypot. Removed from the layout entirely rather than hidden with
+   opacity or an off-screen offset, both of which some password
+   managers and autofill heuristics will still populate — which would
+   make Netlify discard a real person's enquiry as spam. */
+.form-honeypot {
+  display: none;
+}
+
 .form-field label {
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 500;
+  letter-spacing: var(--tracking-normal);
   color: var(--color-ink-soft);
 }
 
 .form-field input,
 .form-field textarea {
-  font-family: var(--font-body);
-  font-size: 0.9375rem;
+  /* Inter, not the display face: this is text the user types and
+     proof-reads, where a neutral, high-legibility UI face beats a
+     characterful one. */
+  font-family: var(--font-reading);
+  font-size: 1rem;
   color: var(--color-ink);
   background: var(--color-canvas);
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.05rem;
   transition: border-color var(--duration-base) var(--ease-standard), outline-offset var(--duration-fast) var(--ease-standard);
 }
 
@@ -2005,13 +2295,23 @@ button { font: inherit; }
 
 .form-field textarea {
   resize: vertical;
-  min-height: 7rem;
+  min-height: 9.5rem;
 }
 
+/* The standing reassurance line was removed at the founder's
+   direction; this now only ever carries the live submit status. */
 .contact-note {
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   color: var(--color-ink-muted);
   margin: var(--space-2) 0 0;
+}
+
+/* The submit is the page's single CTA and the last thing on it —
+   sized up to match the section around it. */
+.contact-form .btn-primary {
+  align-self: flex-start;
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
 }
 
 .site-footer {
@@ -2092,17 +2392,26 @@ button { font: inherit; }
 }
 
 /* ============================================
-   LEGAL PAGES (Privacy / Terms)
-   Not part of the original single-file prototype — its
-   footer links to /privacy and /terms, so these routes
-   exist as reserved-slot pages (the same "reserve the
-   slot, never fake the asset" pattern used sitewide)
-   instead of shipping dead links (§5.6). Replace the
-   reserved block with the real documents when legal
-   copy is finalised.
+   LEGAL (Privacy / Terms)
+
+   Two presentations of one document set (see
+   src/data/legal.ts): a centred overlay opened from
+   the footer, and the /privacy and /terms routes for
+   direct and shared links. The body styles are shared
+   between them, so the two can never look like
+   different documents.
+
+   This is the one part of the site set in the reading
+   face rather than the display face — several hundred
+   words of dense clauses is exactly the case Space
+   Grotesk is the wrong tool for.
    ============================================ */
 .legal-page {
   padding-block: var(--space-9);
+}
+
+.legal-page-inner {
+  max-width: 46rem;
 }
 
 .legal-page h1 {
@@ -2111,35 +2420,173 @@ button { font: inherit; }
   font-size: var(--type-section);
   letter-spacing: var(--tracking-snug);
   color: var(--color-ink);
-  margin: 0 0 var(--space-6);
+  margin: 0 0 var(--space-5);
 }
 
-.legal-reserved {
-  max-width: 40rem;
-  padding: var(--space-6);
-  border: 1px dashed var(--color-line);
-  border-radius: var(--radius-md);
-  background: var(--color-canvas-raised);
-}
-
-.legal-reserved p {
-  margin: 0 0 var(--space-3);
-  font-size: 0.9375rem;
-  line-height: 1.65;
-  color: var(--color-ink-muted);
-}
-
-.legal-reserved p:last-child { margin-bottom: 0; }
-
-.legal-reserved strong {
-  color: var(--color-ink);
-  font-weight: 600;
-}
-
-.legal-reserved a {
+.legal-panel-body {
+  font-family: var(--font-reading);
   color: var(--color-ink-soft);
+}
+
+.legal-panel-body h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: var(--tracking-snug);
+  color: var(--color-ink);
+  margin: var(--space-6) 0 var(--space-3);
+}
+
+.legal-panel-body p {
+  margin: 0 0 var(--space-4);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.legal-panel-body p:last-child { margin-bottom: 0; }
+
+.legal-intro {
+  font-size: 1.0625rem !important;
+  color: var(--color-ink);
+}
+
+/* ---- Footer links, rendered as buttons ----
+   They open an overlay rather than navigating, so they are buttons,
+   not links — but they have to be visually indistinguishable from
+   the anchors sitting immediately above and beside them. */
+.legal-link {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 0 0.35rem;
+  display: block;
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  text-align: left;
+  color: var(--color-ink-soft);
+  cursor: pointer;
   transition: color var(--duration-base) var(--ease-standard);
 }
 
-.legal-reserved a:hover,
-.legal-reserved a:focus-visible { color: var(--color-ink); }
+.legal-link:hover,
+.legal-link:focus-visible { color: var(--color-ink); }
+
+.footer-bottom-links .legal-link {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+}
+
+.footer-bottom-links .legal-link:hover,
+.footer-bottom-links .legal-link:focus-visible { color: var(--color-ink); }
+
+/* ---- The overlay ---- */
+.legal-dialog {
+  /* Restores what the UA stylesheet already does for a modal dialog
+     and Tailwind's preflight then undoes: `margin: auto` on all four
+     sides is the mechanism that centres it in the viewport. Without
+     it the panel pins to the top-left corner. */
+  margin: auto;
+  width: min(46rem, calc(100vw - 2 * var(--container-pad)));
+  max-height: min(82svh, 52rem);
+  padding: 0;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  box-shadow: 0 40px 80px -32px rgba(18, 19, 25, 0.55);
+  overflow: hidden;
+}
+
+/* A <dialog> opened with showModal() is centred by the UA's own
+   margin:auto on all sides; overflow is left to the scrolling body
+   inside so the header can stay pinned. */
+.legal-dialog::backdrop {
+  background: rgba(12, 13, 17, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.legal-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+}
+
+.legal-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-6) var(--space-5);
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-canvas);
+}
+
+.legal-panel-head h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.375rem;
+  letter-spacing: var(--tracking-snug);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.legal-close {
+  appearance: none;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas-raised);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition:
+    color var(--duration-base) var(--ease-out-quick),
+    border-color var(--duration-base) var(--ease-out-quick),
+    background var(--duration-base) var(--ease-out-quick);
+}
+
+.legal-close:hover,
+.legal-close:focus-visible {
+  color: var(--color-ink);
+  border-color: var(--color-ink-muted);
+  background: var(--color-canvas);
+}
+
+.legal-close svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+}
+
+.legal-dialog .legal-panel-body {
+  overflow-y: auto;
+  padding: var(--space-6);
+  overscroll-behavior: contain;
+}
+
+/* The first section heading would otherwise open with the same gap
+   it uses between sections, doubling the panel's top padding. */
+.legal-dialog .legal-panel-body > section:first-of-type h3,
+.legal-page .legal-panel-body > section:first-of-type h3 {
+  margin-top: var(--space-5);
+}
+
+@media (max-width: 560px) {
+  .legal-dialog {
+    max-height: 88svh;
+  }
+
+  .legal-panel-head,
+  .legal-dialog .legal-panel-body {
+    padding: var(--space-5);
+  }
+}

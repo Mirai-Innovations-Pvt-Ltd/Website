@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LegalLink, LegalProvider } from "@/components/LegalOverlay";
 
 /*
   DEV NOTE (§5.3): entity name, CIN, DPIIT number, registered
@@ -12,7 +12,8 @@ import Link from "next/link";
 */
 export default function SiteFooter() {
   return (
-    <footer className="site-footer">
+    <LegalProvider>
+      <footer className="site-footer">
       <div className="container">
         <div className="footer-columns">
           <div>
@@ -42,19 +43,20 @@ export default function SiteFooter() {
           </div>
           <div>
             <h3>Legal</h3>
-            <Link href="/privacy">Privacy Policy</Link>
-            <Link href="/terms">Terms of Use</Link>
+            <LegalLink doc="privacy">Privacy Policy</LegalLink>
+            <LegalLink doc="terms">Terms of Use</LegalLink>
           </div>
         </div>
 
         <div className="footer-bottom">
           <span>© 2026 Mirai Innovations Private Limited. All rights reserved.</span>
           <div className="footer-bottom-links">
-            <Link href="/privacy">Privacy</Link>
-            <Link href="/terms">Terms</Link>
+            <LegalLink doc="privacy">Privacy</LegalLink>
+            <LegalLink doc="terms">Terms</LegalLink>
           </div>
         </div>
       </div>
-    </footer>
+      </footer>
+    </LegalProvider>
   );
 }

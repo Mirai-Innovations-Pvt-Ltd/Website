@@ -8,14 +8,40 @@ const FALLBACK_ERROR =
   "Something went wrong — please try again, or email hello@miraiinnovations.tech.";
 
 /*
-  §5.4/§5.6: the sitewide CTA doubles as the real form submit. The
-  form posts (without reloading) to /api/contact, which delivers
-  the enquiry to hello@miraiinnovations.tech via the configured
-  email provider — see src/app/api/contact/route.ts and
-  .env.example for the required environment variables. Until those
-  are set, the API answers with an honest "not configured" error
-  (shown below) rather than pretending the email was sent.
+  §5.4/§5.6: the sitewide CTA doubles as the real form submit.
+
+  Delivery is Netlify Forms, not a server route of our own. Netlify
+  intercepts the POST at the edge, stores the submission against the
+  site (browsable and exportable in the dashboard), runs it through
+  spam filtering, and emails the notification address configured under
+  Forms > Form notifications — set that to hello@miraiinnovations.tech.
+
+  Three details are load-bearing and none of them are obvious:
+
+    1. The POST goes to /__forms.html, NOT to this page's own URL.
+       That file (public/__forms.html) is the static declaration
+       Netlify parsed at deploy time; posting anywhere else 404s,
+       because a React-rendered form is invisible to the detector.
+
+    2. The body must be url-encoded, not JSON. Netlify's form handler
+       does not parse a JSON body — it would accept the request and
+       record an empty submission.
+
+    3. form-name must be present in the body and must match the form
+       declared in __forms.html, or Netlify cannot route the
+       submission to a form.
+
+  bot-field is a honeypot: hidden from people, filled in by naive
+  bots, and Netlify discards anything that arrives with it populated.
+  It is wrapped in a class rather than `hidden` so assistive tech is
+  told to skip it (aria-hidden + tabIndex) instead of a real user
+  being asked to leave a field blank.
+
+  In local `next dev` there is no Netlify edge, so submitting here
+  will fail — that is expected. Test it on a deploy preview.
 */
+const FORM_NAME = "contact";
+
 export default function ContactSection() {
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [errorMessage, setErrorMessage] = useState(FALLBACK_ERROR);
@@ -25,30 +51,18 @@ export default function ContactSection() {
     if (status === "sending") return; // belt-and-braces against double submits
 
     const form = event.currentTarget;
-    const data = new FormData(form);
+    const formData = new FormData(form);
 
     setStatus("sending");
     try {
-      const res = await fetch("/api/contact", {
+      const res = await fetch("/__forms.html", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: data.get("name"),
-          email: data.get("email"),
-          message: data.get("message"),
-        }),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(formData as unknown as string[][]).toString(),
       });
       if (!res.ok) {
-        /* Keep the entered data; show the server's reason when it
-           provides one (e.g. provider not configured yet). */
-        const payload = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        setErrorMessage(
-          payload?.error && typeof payload.error === "string"
-            ? payload.error
-            : FALLBACK_ERROR,
-        );
+        /* Keep the entered data so nothing the user typed is lost. */
+        setErrorMessage(FALLBACK_ERROR);
         setStatus("error");
         return;
       }
@@ -65,7 +79,21 @@ export default function ContactSection() {
       <div className="container contact-inner">
         <h2 id="contact-heading">Talk to us</h2>
 
-        <form className="contact-form" method="post" onSubmit={handleSubmit}>
+        <form
+          className="contact-form"
+          name={FORM_NAME}
+          method="post"
+          onSubmit={handleSubmit}
+        >
+          <input type="hidden" name="form-name" value={FORM_NAME} />
+
+          <p className="form-honeypot" aria-hidden="true">
+            <label>
+              Leave this field empty
+              <input type="text" name="bot-field" tabIndex={-1} autoComplete="off" />
+            </label>
+          </p>
+
           <div className="form-field">
             <label htmlFor="contact-name">Name</label>
             <input
@@ -97,9 +125,6 @@ export default function ContactSection() {
           >
             Talk to us
           </button>
-          <p className="contact-note">
-            No pricing to discuss, no sales qualification — just a conversation.
-          </p>
           {status !== "idle" && (
             <p className="contact-note" role="status">
               {status === "sending"

@@ -25,9 +25,8 @@ src/
     page.tsx              Home page — composes the section components
     globals.css           The prototype's full design system, preserved verbatim
     icon.svg              Favicon (same artwork as the prototype's data URI)
-    privacy/page.tsx      Reserved-slot page (see "Pending before launch")
-    terms/page.tsx        Reserved-slot page (see "Pending before launch")
-    api/contact/route.ts  Contact form endpoint (validation + logging)
+    privacy/page.tsx      Privacy Policy (renders src/data/legal.ts)
+    terms/page.tsx        Terms of Use (renders src/data/legal.ts)
   components/
     SiteHeader.tsx        Sticky nav, mobile <details> menu, CTA
     ThemeToggle.tsx       Light/dark toggle (client) — light default, no persistence
@@ -42,13 +41,18 @@ src/
     RetailerBenefits.tsx
     BehindTheBuild.tsx    Photowalk reserved slots
     TeamSection.tsx
-    ContactSection.tsx    Form (client) posting to /api/contact
+    ContactSection.tsx    Form (client) posting to Netlify Forms
+    LegalOverlay.tsx      Privacy/Terms modal + footer trigger links (client)
+    LegalDocument.tsx     Same documents rendered as a full page
     SiteFooter.tsx        Legal/entity footer (§5.3)
   data/
     vton.ts               Selector result matrix + helpers — extending the
                           matrix is a data change, not a rebuild (§5.1b)
     team.ts               Team members
-public/images/            Reserved credential logo slots (see README there)
+    legal.ts              Privacy Policy + Terms of Use copy (one source
+                          for both the overlay and the routes)
+public/__forms.html       Netlify Forms declaration — see "Contact form"
+public/images/            Photography and institutional marks (see README there)
 ```
 
 ## Architecture decisions
@@ -76,10 +80,13 @@ public/images/            Reserved credential logo slots (see README there)
   needed now that /privacy and /terms exist as routes; on the home page the
   behavior is identical (fragment navigation, CSS smooth scrolling,
   88px scroll-margin under the sticky header).
-- **Contact form** posts to `/api/contact` (replacing the prototype's
-  `action="#"` structural placeholder, as its own DEV NOTE requires). The
-  route validates input and currently logs submissions server-side; the
-  delivery channel is a marked integration point.
+- **Contact form uses Netlify Forms, not a route of our own.** It previously
+  posted to an `/api/contact` route that relayed through Resend; that was
+  removed in favour of the platform's own form handling, which brings spam
+  filtering and a stored, exportable submission record, and needs no API key
+  or DNS work. The trade accepted knowingly: it only works on Netlify, and
+  the notification comes from Netlify's sender rather than our own domain.
+  See "Contact form" below for the mechanics.
 
 ## Pending before launch (from the prototype's DEV NOTEs)
 
@@ -95,34 +102,45 @@ the real asset and the styling/interaction is already correct.
 | ~~Team photos~~ — **integrated** | `TeamSection.tsx`, `public/images/team/` | Done: group photograph + all three founder headshots. |
 | ~~Team LinkedIn URLs~~ — **integrated** | `data/team.ts` | Done — all three real profile URLs in place. Launch QA (§5.2): confirm each profile lists Mirai as current employment. |
 | ~~Company LinkedIn URL~~ — **integrated** | `SiteFooter.tsx` | Done — links to linkedin.com/company/miraiinnovations. |
-| Contact delivery — **implemented, needs credentials** | `api/contact/route.ts`, `.env.example` | Full Resend integration in place (Reply-To = submitter, timestamped, recipient hello@miraiinnovations.tech). Set `RESEND_API_KEY` + `CONTACT_FROM_EMAIL` (see below), then test delivery from an external address (§5.6/§11). Until then the API returns an honest "not configured" error and logs submissions server-side. |
-| Privacy Policy / Terms of Use | `app/privacy`, `app/terms` | Real legal documents replace the reserved blocks. |
+| Contact delivery — **integrated** | `ContactSection.tsx`, `public/__forms.html` | Netlify Forms. One dashboard step remains: set the notification recipient to hello@miraiinnovations.tech under Forms > Form notifications, then test from an external address (§5.6/§11). |
+| ~~Privacy Policy / Terms of Use~~ — **integrated** | `data/legal.ts`, `LegalOverlay.tsx`, `app/privacy`, `app/terms` | Done — real documents, shown as a footer overlay and at their own routes. Have counsel review before any funding or compliance review, and revisit the Cookies / Third parties clauses if an analytics script, embed, or chat widget is ever added. |
 
-## Email delivery configuration
+## Contact form (Netlify Forms)
 
-The contact form delivers through [Resend](https://resend.com) (REST API,
-no SDK dependency). Copy `.env.example` to `.env.local` (or set the same
-variables in the hosting dashboard) and fill in:
+Netlify discovers forms by parsing **static HTML at deploy time**. This
+site's form is a React client component, so it is invisible to that
+detector — `public/__forms.html` is the declaration Netlify actually
+reads, and it is why the form works at all.
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `RESEND_API_KEY` | yes | Resend API key (verify the `miraiinnovations.tech` domain in Resend first). |
-| `CONTACT_FROM_EMAIL` | yes | Verified sender identity, e.g. `Mirai Website <noreply@miraiinnovations.tech>`. |
-| `CONTACT_TO_EMAIL` | no | Recipient override; defaults to `hello@miraiinnovations.tech`. |
+Three things must stay in sync, and nothing fails loudly if they drift:
 
-All variables are read server-side only — no secret ever reaches the
-client. Until the two required variables are set, submissions are logged
-on the server and the form shows an honest "not configured" error instead
-of a fake success. The received email contains the sender's name, email,
-message, and submission timestamp (IST + UTC), with Reply-To set to the
-sender so replying reaches them directly.
+1. **Field names** in `ContactSection.tsx` must all appear in
+   `public/__forms.html`. A field missing there is silently dropped from
+   the stored submission.
+2. **The POST target is `/__forms.html`**, not the page's own URL.
+3. **The body is url-encoded, not JSON**, and includes `form-name`.
+   Netlify's handler does not parse JSON — it would accept the request
+   and record an empty submission.
+
+`bot-field` is a honeypot: hidden from people, filled in by naive bots,
+discarded by Netlify. It is removed from the layout with `display: none`
+rather than positioned off-screen, so password managers don't autofill
+it and get a real enquiry classified as spam.
+
+**Local `next dev` has no Netlify edge, so submitting locally will fail.**
+That is expected — test on a deploy preview or production.
+
+No API keys, environment variables, or DNS records are involved. The
+recipient is configured in the Netlify UI (Forms > Form notifications),
+not in this repository.
 
 ## Verification performed
 
 - `npm run build` passes with zero TypeScript/ESLint errors; all routes
-  prerender (API route dynamic).
-- Production server smoke-tested (`npm start`): home SSR content, `/privacy`,
-  `/terms`, and `POST /api/contact` all verified.
+  prerender.
+- Production server smoke-tested (`npm start`): home SSR content, `/privacy`
+  and `/terms` verified. Form delivery cannot be verified locally — Netlify
+  Forms only exists on a deploy.
 - Browser-tested: theme toggle (including the Behind the Build white-surface
   inversion in dark mode), selector state machine across gender/subject/garment
   (exact prototype behavior incl. reset-on-gender-switch), contact form

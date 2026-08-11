@@ -21,7 +21,7 @@ const PHOTOWALK_SLOTS = [
     id: "vnest",
     src: "/images/photowalk/vnest-recognition.png",
     alt: "Two Mirai team members receiving a recognition document at V-NEST, the VIT Chennai startup and research foundation",
-    note: "Alongside the Director of V-NEST, on the day of our incorporation.",
+    note: "Marking our incorporation, alongside Dr Sasikumar, Director V-Nest",
   },
   {
     id: "mentors",
@@ -43,10 +43,17 @@ const PHOTOWALK_SLOTS = [
   },
 ];
 
-/* Tiles no longer hold a fixed share of the row — the hovered one
-   takes roughly half of it — so the widest state is what the
-   browser needs to size for. */
-const TILE_SIZES = "(max-width: 560px) 100vw, (max-width: 860px) 60vw, 45vw";
+/* Two per row, and the hovered one takes about three-quarters of
+   its row — so the widest state is what the browser needs to size
+   for. */
+const TILE_SIZES = "(max-width: 720px) 100vw, 70vw";
+
+/* Two flex rows of two rather than one four-column grid. The grid
+   would give the 2x2 shape too, but flex-grow only redistributes
+   space inside a single flex line — laying the pairs out as real
+   rows is what keeps the "hovered tile grows, its neighbour yields"
+   behaviour working now that the tiles are stacked 2x2. */
+const ROWS = [PHOTOWALK_SLOTS.slice(0, 2), PHOTOWALK_SLOTS.slice(2, 4)];
 
 export default function BehindTheBuild() {
   return (
@@ -57,16 +64,20 @@ export default function BehindTheBuild() {
           <p>A look into some of our memories along our journey.</p>
         </div>
 
-        <div className="photowalk-row">
-          {PHOTOWALK_SLOTS.map((slot) => (
-            <figure key={slot.id} className="photowalk-item" tabIndex={0}>
-              <div className="photowalk-media">
-                <Image src={slot.src} alt={slot.alt} fill sizes={TILE_SIZES} />
-              </div>
-              <figcaption className="photowalk-note">
-                <span>{slot.note}</span>
-              </figcaption>
-            </figure>
+        <div className="photowalk-grid">
+          {ROWS.map((row, rowIndex) => (
+            <div className="photowalk-row" key={rowIndex}>
+              {row.map((slot) => (
+                <figure key={slot.id} className="photowalk-item" tabIndex={0}>
+                  <div className="photowalk-media">
+                    <Image src={slot.src} alt={slot.alt} fill sizes={TILE_SIZES} />
+                  </div>
+                  <figcaption className="photowalk-note">
+                    <span>{slot.note}</span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
           ))}
         </div>
       </div>

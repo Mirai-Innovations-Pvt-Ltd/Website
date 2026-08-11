@@ -9,6 +9,34 @@ import {
   getSubjects,
 } from "@/data/vton";
 
+/* The frosted plate that lifts above a card on hover. Purely
+   decorative — it magnifies the image the card already shows, and
+   the card's own alt text already names it, so this is hidden from
+   assistive tech rather than announced a second time. */
+function CardZoom({
+  src,
+  position,
+  sizes,
+}: {
+  src: string;
+  position?: string;
+  sizes: string;
+}) {
+  return (
+    <span className="card-zoom" aria-hidden="true">
+      <span className="card-zoom-frame">
+        <Image
+          src={src}
+          alt=""
+          fill
+          sizes={sizes}
+          style={position ? { objectPosition: position } : undefined}
+        />
+      </span>
+    </span>
+  );
+}
+
 export default function VtonSelector() {
   const [gender, setGender] = useState<Gender>("male");
   const [subjectId, setSubjectId] = useState<string>("m1");
@@ -104,6 +132,11 @@ export default function VtonSelector() {
                       }
                     />
                   </div>
+                  <CardZoom
+                    src={sub.image}
+                    position={sub.thumbPosition}
+                    sizes="14rem"
+                  />
                 </button>
               ))}
             </div>
@@ -129,6 +162,7 @@ export default function VtonSelector() {
                       className="garment-thumb-img"
                     />
                   </div>
+                  <CardZoom src={garm.image} sizes="12rem" />
                 </button>
               ))}
             </div>

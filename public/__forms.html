@@ -1,0 +1,35 @@
+<!doctype html>
+<!--
+  Netlify Forms registration file. NOT a page anyone visits.
+
+  Netlify discovers forms by parsing static HTML at deploy time. This
+  site's contact form is a React client component that never exists as
+  static HTML, so it would never be detected — this file is the
+  declaration Netlify actually reads. It must live in public/ so it is
+  copied verbatim into the deploy rather than compiled by Next.
+
+  Rules that matter (opennext.js.org/netlify/forms):
+    - Every field the real form submits must appear here by NAME, or
+      that field is silently dropped from the stored submission.
+    - The hidden form-name input must match the <form name>.
+    - The real form POSTs to /__forms.html as url-encoded data.
+
+  So: change a field name in src/components/ContactSection.tsx and you
+  MUST change it here too. There is no build-time error if they drift —
+  the data just goes missing.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Netlify form definitions</title>
+  </head>
+  <body>
+    <form name="contact" data-netlify="true" data-netlify-honeypot="bot-field" hidden>
+      <input type="hidden" name="form-name" value="contact" />
+      <input type="text" name="bot-field" />
+      <input type="text" name="name" />
+      <input type="email" name="email" />
+      <textarea name="message"></textarea>
+    </form>
+  </body>
+</html>

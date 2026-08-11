@@ -42,10 +42,13 @@ export const SUBJECTS: SubjectOption[] = [
 
 export const GARMENTS: GarmentOption[] = [
   { id: "m_g1", label: "Simple Hoodie", gender: "male", image: "/images/vton/garment-m1.jpg" },
-  { id: "m_g2", label: "Leather Jacket", gender: "male", image: "/images/vton/garment-m2.webp" },
+  /* Re-plated onto a 3:4 canvas: the original export was a near-square
+     crop that ran edge to edge, so the card cropped its sleeves off and
+     it read visibly larger than every other garment in the row. */
+  { id: "m_g2", label: "Leather Jacket", gender: "male", image: "/images/vton/garment-m2.png" },
   { id: "m_g3", label: "Simple Jeans", gender: "male", image: "/images/vton/garment-m3.jpg" },
 
-  { id: "w_g2", label: "T-Shirt", gender: "female", image: "/images/vton/garment-w2.avif" },
+  { id: "w_g2", label: "Ringer T-Shirt", gender: "female", image: "/images/vton/garment-w2.png" },
   { id: "w_g1", label: "Dress", gender: "female", image: "/images/vton/garment-w1.jpg" },
   { id: "w_g3", label: "Formals", gender: "female", image: "/images/vton/garment-w3.png" },
 ];
