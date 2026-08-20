@@ -26,6 +26,12 @@ const MARKS = [
     width: 800,
     height: 340,
   },
+  {
+    src: "/images/298-2985895_google-cloud-for-startups-hd-png-download.png",
+    alt: "Google Cloud for Startups",
+    width: 1200,
+    height: 360,
+  },
 ];
 
 export default function RecognitionStrip() {
