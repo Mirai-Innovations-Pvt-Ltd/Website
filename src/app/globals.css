@@ -920,10 +920,12 @@ button { font: inherit; }
 }
 
 .recognition-strip-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
+  justify-items: center;
+  width: 100%;
+}
   /* +30% on the original 10rem column gap. The marks are the only
      thing on this band, so the air between them is what makes them
      read as three separate endorsements rather than one graphic. */
