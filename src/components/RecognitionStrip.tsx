@@ -9,6 +9,18 @@ import Image from "next/image";
    public/images (see the README there). */
 const MARKS = [
   {
+    src: "/images/GoogleCloudNoBG.png",
+    alt: "Google Cloud for Startups",
+    width: 1200,
+    height: 360,
+  },
+  {
+    src: "/images/startupindia-mark.png",
+    alt: "#startupindia — Government of India, Ministry of Commerce and Industry",
+    width: 800,
+    height: 340,
+  },
+  {
     src: "/images/dpiit-mark.png",
     alt: "Recognized by DPIIT — Department for Promotion of Industry and Internal Trade",
     width: 582,
@@ -19,18 +31,6 @@ const MARKS = [
     alt: "V-Nest — VIT Chennai Startup and Research Foundation",
     width: 745,
     height: 410,
-  },
-  {
-    src: "/images/startupindia-mark.png",
-    alt: "#startupindia — Government of India, Ministry of Commerce and Industry",
-    width: 800,
-    height: 340,
-  },
-  {
-    src: "/images/GoogleCloudNoBG.png",
-    alt: "Google Cloud for Startups",
-    width: 1200,
-    height: 360,
   },
 ];
 
