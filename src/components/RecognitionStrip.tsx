@@ -27,7 +27,7 @@ const MARKS = [
     height: 340,
   },
   {
-    src: "/images/298-2985895_google-cloud-for-startups-hd-png-download.png",
+    src: "/images/GoogleCloudNoBG.png",
     alt: "Google Cloud for Startups",
     width: 1200,
     height: 360,
