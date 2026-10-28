@@ -1,41 +1,8 @@
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
+node_modules/
 .DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files
+Thumbs.db
+*.log
 .env*
-!.env.example
 
 # user-local tooling config
 .claude/
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# Source images (not pushed to GitHub)
-/images/

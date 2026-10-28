@@ -1,0 +1,13 @@
+{
+  "name": "Layer by Mirai",
+  "short_name": "Layer",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#08070A",
+  "theme_color": "#08070A",
+  "icons": [
+    { "src": "assets/logos/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/logos/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/logos/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

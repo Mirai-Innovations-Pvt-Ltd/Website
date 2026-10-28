@@ -1,0 +1,8 @@
+# Keep LF everywhere: the CSP in site/_headers pins inline scripts by hash, and CRLF would change that hash.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
+*.woff2 binary
+*.mp4 binary
