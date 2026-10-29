@@ -62,6 +62,9 @@ function reflectionOf(mat) {
 
 export function createStation(canvas, opts = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, premultipliedAlpha: true, preserveDrawingBuffer: !!opts.preserve, powerPreference: 'high-performance' });
+  // checking every shader's compile log makes the page wait on the GPU for each one (seconds, cold, on ANGLE); a live page
+  // skips it, so shaders build in the background (compileAsync). Offline renders (preserve / debug) keep the check
+  renderer.debug.checkShaderErrors = !!(opts.debug || opts.preserve);
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -165,6 +168,7 @@ export function createStation(canvas, opts = {}) {
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), blurMat);
   const quadScene = new THREE.Scene(); quadScene.add(quad);
 
+
   let W = 2, H = 2, dirty = true;
   function size(w, h, dpr = Math.min(devicePixelRatio || 1, 2)) {
     renderer.setPixelRatio(dpr); renderer.setSize(w, h, false); W = w; H = h;
@@ -204,12 +208,29 @@ export function createStation(canvas, opts = {}) {
     v3.set(x, y, z).applyMatrix4(station.matrixWorld).project(cam);
     return [(v3.x + 1) / 2 * W, (1 - v3.y) / 2 * H];
   }
+  // the texture the glass shows (a still, then the clip): built here, so the page needs nothing of three.js itself and the
+  // bundle keeps only the parts of three.js the station uses
+  function screenTexture() {
+    const t = new THREE.Texture(); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    return t;
+  }
+  // every shader built in the background where the browser can (KHR_parallel_shader_compile), then one hidden draw, so
+  // each program's uniforms and every texture are resolved before the first frame anyone sees (three.js otherwise
+  // finishes those on the first visible frame, and the page waits on the GPU there)
+  async function prepare(gate) {
+    if (renderer.compileAsync) { await renderer.compileAsync(scene, cam).catch(() => {}); await renderer.compileAsync(quadScene, quadCam).catch(() => {}); }
+    if (gate) await gate();                                     // the page can hold the hidden draw for a quieter moment
+    render();
+  }
   return {
-    THREE, renderer, scene, station, camera: cam, active, size, render, screenQuad, project,
+    renderer, scene, station, camera: cam, active, size, render, screenQuad, project, screenTexture, prepare,
     get dirty() { return dirty; },
     setTurn(rad) { if (station.rotation.y !== rad) { station.rotation.y = rad; mirror.rotation.y = rad; dirty = true; } },
     // crop of the full frame, in the plate's own pixels (1536 x 864 for the hall)
-    setView(fullW, fullH, x, y, w, h) { view = [fullW, fullH, x, y, w, h]; applyView(); },
+    setView(fullW, fullH, x, y, w, h) {
+      if (view && view[0] === fullW && view[1] === fullH && Math.abs(view[2] - x) < .01 && Math.abs(view[3] - y) < .01 && Math.abs(view[4] - w) < .01 && Math.abs(view[5] - h) < .01) return;
+      view = [fullW, fullH, x, y, w, h]; applyView();
+    },
     // 0: the plate's eye (level, 1.03 m, left of the station); 1: square on to the glass, at its centre
     setEye(t) { if (lift !== t) { lift = t; applyView(); } },
     // a free camera (for stills composited into other photos): position, target, vertical fov, aspect

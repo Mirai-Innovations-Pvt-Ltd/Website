@@ -24,7 +24,8 @@
 <link rel="manifest" href="site.webmanifest">
 <link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="preload" href="assets/fonts/ibm-plex-mono/ibm-plex-mono-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css?v=103">
+<link rel="stylesheet" href="style.css?v=115">
+<link rel="preload" href="assets/station/station.bundle.js?v=115" as="script">
 <script type="application/ld+json">
 {"@context": "https://schema.org", "@graph": [
   {"@type": "Organization", "@id": "https://miraiinnovations.tech/#org",
@@ -69,10 +70,9 @@
   <button class="band__menu" type="button" aria-expanded="false" aria-controls="bandNav">Menu</button>
   <nav class="band__nav" id="bandNav" aria-label="Sections">
     <a href="#how">How it works</a>
-    <a href="#crew">Crew</a>
-    <a href="#drops">First pilot</a>
-    <a href="#brands">For brands</a>
-    <a href="#station">Layer Station</a>
+    <a href="#drops">Pilot</a>
+    <a href="#brands">Brands &amp; malls</a>
+    <a href="#station">Station</a>
     <a href="#faq">FAQ</a>
   </nav>
   <a class="key key--bone key--sm band__go" href="#contact">Let's pilot <span class="key__go">→</span></a>
@@ -81,10 +81,11 @@
 
 <!-- ───────────── HERO: the station at an angle, alone; scroll turns it and pushes into its screen ───────────── -->
 <section class="hero" id="hero" aria-label="Layer, a virtual try-on station">
-  <i class="snap" style="--at:0" aria-hidden="true"></i><i class="snap" style="--at:.42" aria-hidden="true"></i><i class="snap" style="--at:1" aria-hidden="true"></i>
+  <i class="snap" style="--at:0" aria-hidden="true"></i><i class="snap" style="--at:.42" aria-hidden="true"></i><i class="snap" style="--at:.9" aria-hidden="true"></i>
   <div class="hero__stage">
     <div class="hero__scene" id="scene">
       <img class="hero__plate" fetchpriority="high" src="assets/img/hero-plate.webp" width="1536" height="864" alt="The Layer Station standing alone in a dark hall under a single spotlight">
+      <img class="hero__still" id="heroStill" fetchpriority="high" src="assets/img/hero-station.webp" width="744" height="1352" alt="">
       <img class="hero__near" id="heroNear" data-src="assets/img/hero-near.webp" width="3072" height="1920" alt="" decoding="async">
       <img class="hero__flat" id="kioskFlat" src="assets/img/kiosk-still.webp" width="550" height="1864" alt="" hidden>
     </div>
@@ -98,9 +99,9 @@
         <div class="kui__tag" id="kuiTag">LOOK 01</div>
         <div class="kui__foot">
           <div class="kui__picks" id="kuiPicks" role="group" aria-label="Pick a look">
-            <button type="button" data-look="1" aria-pressed="true"><img style="aspect-ratio: 1024 / 1820" src="assets/img/pose-01.webp" alt="Look 1" fetchpriority="low" decoding="async"></button>
-            <button type="button" data-look="2" aria-pressed="false"><img style="aspect-ratio: 1024 / 1820" src="assets/img/pose-02.webp" alt="Look 2" fetchpriority="low" decoding="async"></button>
-            <button type="button" data-look="3" aria-pressed="false"><img style="aspect-ratio: 1024 / 1820" src="assets/img/pose-03.webp" alt="Look 3" fetchpriority="low" decoding="async"></button>
+            <button type="button" data-look="1" aria-pressed="true"><img style="aspect-ratio: 1024 / 1820" src="assets/img/pose-01-thumb.webp" alt="Look 1" fetchpriority="low" decoding="async"></button>
+            <button type="button" data-look="2" aria-pressed="false"><img style="aspect-ratio: 1024 / 1820" src="assets/img/pose-02-thumb.webp" alt="Look 2" fetchpriority="low" decoding="async"></button>
+            <button type="button" data-look="3" aria-pressed="false"><img style="aspect-ratio: 1024 / 1820" src="assets/img/pose-03-thumb.webp" alt="Look 3" fetchpriority="low" decoding="async"></button>
           </div>
           <div class="kui__title" id="kuiTitle">HOLD IT THERE.</div>
           <button class="kui__key" id="putOn" type="button"><b>TRY IT ON</b> <span>→</span></button>
@@ -109,6 +110,7 @@
       <img class="scr-band" src="assets/screens/layer/band.webp" width="540" height="57" alt="" aria-hidden="true">
     </div>
     <div class="hero__grain" aria-hidden="true"></div>
+    <div class="hero__say"><p class="hero__line">The fitting room,<br>minus the room.</p><p class="hero__sub">Walk-up virtual try-on for fashion stores</p></div>
     <div class="hero__cue" aria-hidden="true"><i></i><b></b></div>
   </div>
 </section>
@@ -117,37 +119,43 @@
 
 <!-- ───────────── ONE POSE: what Layer does, for the person in front of it ───────────── -->
 <section class="win pose" id="intro" aria-label="What Layer does">
-  <header class="pose__head">
+  <div class="pose__copy">
     <h1 class="pose__h">One pose.<br>Every <i>look.</i></h1>
-    <div class="pose__side">
-      <p class="pose__data">No app · No login · ~20 s a look</p>
-    </div>
-  </header>
-  <ol class="pose__strip">
-    <li class="is-cap"><img style="aspect-ratio: 1024 / 1820" loading="lazy" src="assets/img/pose-00.webp" alt="A model in a maroon floral tunic and blue jeans, standing for one full-length capture"><span><b>00</b>Pose</span></li>
-    <li><img style="aspect-ratio: 1024 / 1820" loading="lazy" src="assets/img/pose-01.webp" alt="The same model, same stance, in a burnt-orange mountain graphic tee, olive cargos and white sneakers"><span><b>01</b>Look</span></li>
-    <li><img style="aspect-ratio: 1024 / 1820" loading="lazy" src="assets/img/pose-02.webp" alt="The same model in a cream shirt, navy wide-leg trousers and black loafers"><span><b>02</b>Look</span></li>
-    <li><img style="aspect-ratio: 1024 / 1820" loading="lazy" src="assets/img/pose-03.webp" alt="The same model in a cropped black bomber over a white tee, light wide jeans and white sneakers"><span><b>03</b>Look</span></li>
-    <li class="is-wiped"><div class="pose__frame"><img style="aspect-ratio: 1024 / 1820" loading="lazy" src="assets/img/pose-wiped.webp" alt="The same white studio, empty: the photo is gone"><i>Photo wiped</i></div><span><b>—</b>Wiped</span></li>
-  </ol>
+    <ul class="pose__chips" aria-label="What a shopper needs">
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.8" width="10" height="18.4" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 18h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.5 3.5l17 17" style="stroke: var(--void)" stroke-width="4.5" stroke-linecap="round"/><path d="M3.5 3.5l17 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>No app</li>
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 6.9-.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.5 3.5l17 17" style="stroke: var(--void)" stroke-width="4.5" stroke-linecap="round"/><path d="M3.5 3.5l17 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>No login</li>
+    </ul>
+  </div>
+  <figure class="pose__card" role="img" aria-label="One shopper, one capture: the same model in the same stance, first in a maroon floral tunic and jeans, then in an orange graphic tee and olive cargos, a cream shirt and navy trousers, and a black bomber over light jeans">
+    <div class="pose__look on"><img src="assets/img/pose-00.webp" width="1024" height="1820" alt="" decoding="async"></div>
+    <div class="pose__look"><img src="assets/img/pose-01.webp" width="1024" height="1820" alt="" loading="lazy" decoding="async"></div>
+    <div class="pose__look"><img src="assets/img/pose-02.webp" width="1024" height="1820" alt="" loading="lazy" decoding="async"></div>
+    <div class="pose__look"><img src="assets/img/pose-03.webp" width="1024" height="1820" alt="" loading="lazy" decoding="async"></div>
+    <span class="pose__tag" aria-hidden="true">POSE</span>
+  </figure>
 </section>
 
-<!-- ───────────── HOW IT WORKS: pinned, one window, six real states with the kiosk's own beats ───────────── -->
+<!-- ───────────── HOW IT WORKS: pinned, one window, five real states with the kiosk's own beats ───────────── -->
 <section class="how" id="how" aria-label="How it works">
-  <i class="snap" style="--at:.0833" aria-hidden="true"></i><i class="snap" style="--at:.25" aria-hidden="true"></i><i class="snap" style="--at:.4167" aria-hidden="true"></i>
-  <i class="snap" style="--at:.5833" aria-hidden="true"></i><i class="snap" style="--at:.75" aria-hidden="true"></i><i class="snap" style="--at:.9167" aria-hidden="true"></i>
+  <i class="snap" aria-hidden="true"></i><i class="snap" aria-hidden="true"></i><i class="snap" aria-hidden="true"></i><i class="snap" aria-hidden="true"></i><i class="snap" aria-hidden="true"></i>
   <div class="how__stage">
     <div class="how__copy">
       <h2 class="h1">From walk&#8209;up<br>to wearing it.</h2>
       <ol class="how__steps">
-        <li class="on"><button type="button"><b>01</b><span>Walk up.</span></button><p>The screen calls you over. No app, no login.</p></li>
-        <li><button type="button"><b>02</b><span>Strike one pose.</span></button><p>One full-length capture, solo or with your crew.</p></li>
-        <li><button type="button"><b>03</b><span>Pick a top.</span></button><p>The drop, ranked for you. Swipe through every angle.</p></li>
-        <li><button type="button"><b>04</b><span>Add a bottom.</span></button><p>Your look builds at the foot of the screen.</p></li>
-        <li><button type="button"><b>05</b><span>Watch it render.</span></button><p>Liquid metal finds your silhouette. About 20 seconds.</p></li>
-        <li><button type="button"><b>06</b><span>There you are.</span></button><p>Head to toe, in the look. Walk away and the photo is wiped.</p></li>
+        <li class="on"><button type="button" aria-describedby="hs1"><b>01</b><span>Walk up.</span></button></li>
+        <li><button type="button" aria-describedby="hs2"><b>02</b><span>Strike one pose.</span></button></li>
+        <li><button type="button" aria-describedby="hs3"><b>03</b><span>Build the look.</span></button></li>
+        <li><button type="button" aria-describedby="hs4"><b>04</b><span>Watch it render.</span></button></li>
+        <li><button type="button" aria-describedby="hs5"><b>05</b><span>There you are.</span></button></li>
       </ol>
-      <div class="how__bar thread thread--progress" aria-hidden="true"><b></b></div>
+      <div class="how__say">
+        <p class="on" id="hs1">The screen calls you over. No app, no login.</p>
+        <p id="hs2">One full-length capture, solo or with your crew.</p>
+        <p id="hs3">The drop, ranked for you. Pick a top, add a bottom.</p>
+        <p id="hs4">Liquid metal finds your silhouette. About 20 seconds.</p>
+        <p id="hs5">Head to toe, in the look. Walk away and the photo is wiped.</p>
+      </div>
+      <div class="how__track" aria-hidden="true"><div class="how__bar thread thread--progress"><b></b><i></i></div><span class="how__count">01 / 05</span></div>
     </div>
     <div class="how__kiosk">
       <div class="device" id="device">
@@ -159,7 +167,7 @@
           <img loading="lazy" decoding="async" class="hs hs--sheet" id="hsSheet" src="assets/screens/layer/sheet-panel.webp" width="540" height="960" alt="" aria-hidden="true">
           <div class="hs-s5" id="howS5" aria-hidden="true">
             <video id="hsEnd" src="assets/screens/layer/s5-end.mp4" width="540" height="960" muted playsinline preload="none"></video>
-            <video id="hsHold" src="assets/screens/layer/s5-hold.mp4" poster="assets/screens/layer/s5-hold.webp" width="540" height="960" muted loop playsinline preload="none"></video>
+            <video id="hsHold" src="assets/screens/layer/s5-hold.mp4" data-poster="assets/screens/layer/s5-hold.webp" width="540" height="960" muted loop playsinline preload="none"></video>
           </div>
           <img loading="lazy" decoding="async" class="scr-band" src="assets/screens/layer/band.webp" width="540" height="57" alt="" aria-hidden="true">
           <i class="hs-tap" id="hsTap" aria-hidden="true"></i>
@@ -174,15 +182,15 @@
 <section class="win crew" id="crew" aria-label="Crew mode">
   <figure class="crew__shot"><img loading="lazy" src="assets/img/crew.webp" width="1800" height="1476" alt="Seen from just behind three friends in a clothing store: the Layer Station, turned toward them, shows the same three twinning in matching sage-green tees under THERE YOU ARE."></figure>
   <div class="crew__copy">
-    <h2 class="h1">Twin with<br>your <i>crew.</i></h2>
+    <h2 class="h1">Twin with<br>your crew.</h2>
     <p class="lede">Bring your crew into one capture and try matching fits together. It's how people actually shop on a Saturday.</p>
   </div>
 </section>
 
 <!-- ───────────── THE FIRST PILOT · MAX URB_N'S UN-MUTE (closed; shown in Max's own tone) ───────────── -->
 <div class="drop" id="drops">
-  <section class="win drop__live" aria-label="Layer's first pilot: Max URB_N's UN-MUTE pop-up">
-    <div class="tick" aria-hidden="true"><div class="tick__track" data-tick="FIRST PILOT + MAX URB_N'S UN-MUTE POP-UP + EXPRESS AVENUE, CHENNAI + 24 OCT 2026 + போட்டுப் பாருங்க + LAYER BY MIRAI + "></div></div>
+  <section class="win drop__live" aria-label="Pilot 01: Max URB_N's UN-MUTE pop-up">
+    <div class="tick" aria-hidden="true"><div class="tick__track" data-tick="PILOT 01 + MAX URB_N'S UN-MUTE POP-UP + EXPRESS AVENUE, CHENNAI + 24 OCT 2026 + போட்டுப் பாருங்க + LAYER BY MIRAI + "></div></div>
     <figure class="drop__shot">
       <img loading="lazy" src="assets/img/ev-kiosk.webp" width="960" height="924" alt="The Layer Station at the UN-MUTE pop-up at Express Avenue, its screen saying touch to start, beside the Fit Vault rail">
       <figcaption>Express Avenue · 24 Oct 2026</figcaption>
@@ -190,22 +198,29 @@
     <div class="drop__info">
       <div class="drop__lock"><img style="aspect-ratio: 1302 / 918" loading="lazy" decoding="async" class="drop__max" src="assets/logos/max-urban-unmute.svg" alt="max URB_N, let's UN-MUTE"><span class="drop__x" aria-hidden="true">×</span><img style="aspect-ratio: 1030 / 847" loading="lazy" decoding="async" class="drop__layer" src="assets/logos/layer-by-mirai-lockup.svg" alt="layer by Mirai"></div>
       <div class="drop__panel">
-        <h2 class="mx-h">First pilot,<br><i>wrapped.</i></h2>
+        <h2 class="mx-h">Pilot 01,<br>wrapped.</h2>
         <p>Layer's first pilot ran at Max URB_N's UN-MUTE pop-up. Shoppers walked up, struck one pose and saw themselves in the collection.</p>
         <dl class="facts"><div><dt>When</dt><dd>24 Oct 2026</dd></div><div><dt>Where</dt><dd>Express Avenue, Chennai</dd></div><div><dt>Format</dt><dd>Brand pop-up</dd></div></dl>
       </div>
-      <a class="drop__next" href="#contact"><span>NEXT PILOT</span><b>Your brand here</b><span class="key__go">→</span></a>
+      <a class="drop__next" href="#contact"><span>PILOT 02</span><b>Your brand here</b><span class="key__go">→</span></a>
     </div>
   </section>
 
   <section class="win drop__floor" aria-label="UN-MUTE, from the floor">
-    <h2 class="mx-h mx-h--sm">From the floor.</h2>
+    <div class="floor__head">
+      <h2 class="mx-h mx-h--sm">From the floor.</h2>
+      <p class="floor__k">UN-MUTE · Express Avenue, Chennai · 24 Oct 2026</p>
+    </div>
     <div class="floor">
-      <figure class="fl fl--booth"><img style="aspect-ratio: 1280 / 560" loading="lazy" src="assets/img/ev-booth.webp" alt="The UN-MUTE pop-up: the Layer Station beside the Max rails and the Fit Vault wall"></figure>
-      <figure class="fl fl--crowd"><img style="aspect-ratio: 960 / 1050" loading="lazy" src="assets/img/ev-crowd.webp" alt="A crowd gathered round the station while one shopper picks bottoms"></figure>
-      <figure class="fl fl--stage"><img style="aspect-ratio: 960 / 860" loading="lazy" src="assets/img/ev-watch.webp" alt="A crowd watching the station render a look, A new perspective on its screen"></figure>
-      <figure class="fl fl--film"><img style="aspect-ratio: 1280 / 820" loading="lazy" src="assets/img/ev-film.webp" alt="Two shoppers choosing tops on the station while a videographer films"></figure>
-      <figure class="fl fl--side"><img style="aspect-ratio: 900 / 1200" loading="lazy" src="assets/img/ev-side.webp" alt="Watching the A new perspective screen as a look renders, at UN-MUTE"></figure>
+      <div class="floor__row" style="--s: 3.402">
+        <figure class="fl" style="--a: 2.286"><img width="1280" height="560" loading="lazy" src="assets/img/ev-booth.webp" alt="The UN-MUTE pop-up: the Layer Station beside the Max rails and the Fit Vault wall"></figure>
+        <figure class="fl" style="--a: 1.116"><img width="960" height="860" loading="lazy" src="assets/img/ev-watch.webp" alt="A crowd watching the station render a look, A new perspective on its screen"></figure>
+      </div>
+      <div class="floor__row" style="--s: 3.225">
+        <figure class="fl" style="--a: .914"><img width="960" height="1050" loading="lazy" src="assets/img/ev-crowd.webp" alt="A crowd gathered round the station while one shopper picks bottoms"></figure>
+        <figure class="fl" style="--a: 1.561"><img width="1280" height="820" loading="lazy" src="assets/img/ev-film.webp" alt="Two shoppers choosing tops on the station while a videographer films"></figure>
+        <figure class="fl" style="--a: .75"><img width="900" height="1200" loading="lazy" src="assets/img/ev-side.webp" alt="Watching the A new perspective screen as a look renders, at UN-MUTE"></figure>
+      </div>
     </div>
   </section>
 
@@ -225,20 +240,21 @@
     <div class="prints__copy">
       <p class="ltd">UN-MUTE only</p>
       <h2 class="mx-h mx-h--sm">They took the look<br>home.</h2>
-      <p>At UN-MUTE only, a look could leave the station as an instant print, framed in Max's mark and ours. Some came off the floor; some from our test runs in the cabin before the doors opened.</p>
+      <p>At UN-MUTE only, a look could leave the station as an instant print, framed in Max's mark and ours.</p>
     </div>
     <div class="prints__table">
       <figure class="pol pol--1"><img loading="lazy" src="assets/img/print-unmute.webp" width="532" height="852" alt="A test print from our cabin: a shopper in a red graphic tee, in the UN-MUTE frame"></figure>
       <figure class="pol pol--3"><img loading="lazy" src="assets/img/print-duo.webp" width="532" height="852" alt="A test print from our cabin: two friends in matching white graphic tees, in the UN-MUTE frame"></figure>
       <figure class="pol pol--4"><img loading="lazy" src="assets/img/print-urbn-2.webp" width="760" height="1210" alt="An UN-MUTE instant print: a shopper in a band tee and khaki trousers, framed with max URB_N and layer by Mirai"></figure>
       <figure class="pol pol--5"><img loading="lazy" src="assets/img/print-jacket.webp" width="532" height="852" alt="A test print from our cabin: a shopper in a brown zip hoodie and light jeans, in the UN-MUTE frame"></figure>
+      <p class="prints__note">Some prints are from our test runs, before the doors opened.</p>
     </div>
   </section>
 </div>
 
 <!-- ───────────── FOR BRANDS: what a station brings ───────────── -->
 <section class="win brands" id="brands" aria-label="What Layer brings brands">
-  <h2 class="h1">Advertising that<br><i>wears</i> the shopper.</h2>
+  <h2 class="h1">Advertising that<br>wears the shopper.</h2>
   <div class="vs">
     <div class="vs__card vs__card--banner">
       <div class="vs__art" aria-hidden="true"><span class="vs__tag">END OF SEASON</span><span class="vs__big">UP TO<br>50% OFF</span><span class="vs__small">T&amp;C apply · selected styles</span></div>
@@ -254,7 +270,7 @@
   <ul class="gains">
     <li><b>Try-on to till</b><span>An optional referral code on each look ties a try-on to a sale, at the till or online.</span></li>
     <li><b>Personal, not a poster</b><span>Your campaign, worn by the person standing in front of it.</span></li>
-    <li><b>Experience zones</b><span>Put a station where footfall dies, like an ATM for your brand. A reason to walk over, counted session by session.</span></li>
+    <li><b>Experience zones, for malls</b><span>Put a station where footfall thins out: a reason to walk over and stay a while, counted session by session.</span></li>
   </ul>
 </section>
 
@@ -267,17 +283,20 @@
       <li><b>The run</b><span>Shoppers walk up and try the drop on. We run it; your team sells.</span></li>
       <li><b>After</b><span>Your readout: sessions, try-on rate and the most-tried pieces.</span></li>
     </ol>
-    <a class="key key--bone pilot__go" href="#contact">Let's pilot <span class="key__go">→</span></a>
+    <div class="pilot__keys">
+      <a class="key key--bone pilot__go" href="#contact">Let's pilot <span class="key__go">→</span></a>
+      <a class="key key--line" href="https://wa.me/916383410936?text=Hi%20Mirai%2C%20I%27d%20like%20to%20see%20Layer%20live." target="_blank" rel="noopener">See it live</a>
+    </div>
   </div>
-  <article class="readout" aria-label="A pilot readout">
+  <article class="readout" aria-label="A sample pilot readout">
     <header class="readout__head">
       <img style="aspect-ratio: 354 / 164" loading="lazy" decoding="async" src="assets/logos/layer-wordmark-bone.svg" alt="layer">
       <span>Pilot readout</span>
-      <em>From a pilot</em>
+      <em>Sample</em>
     </header>
     <div class="readout__kpis">
-      <div><b>~90<small>%</small></b><span>try-on rate</span></div>
-      <div><b>~17</b><span>sessions an hour</span></div>
+      <div><b>90<small>%</small></b><span>try-on rate</span></div>
+      <div><b>17</b><span>sessions an hour</span></div>
       <div><b>2×</b><span>tries for the top piece vs the next</span></div>
     </div>
     <div class="readout__top">
@@ -290,7 +309,7 @@
         <li><b>#5</b><span>Bomber jacket</span><i class="t" style="--w:38%"></i></li>
       </ol>
     </div>
-    <footer>Rates rounded. No brand named; piece names generalised.</footer>
+    <footer>A sample, to show the format. Your readout comes from your own run.</footer>
   </article>
 </section>
 
@@ -303,7 +322,7 @@
     <span class="pin" style="--x:53.6%;--y:67.6%">Stand</span>
   </figure>
   <div class="machine__copy">
-    <h2 class="h1">Layer<br><i>Station.</i></h2>
+    <h2 class="h1">Layer<br>Station.</h2>
     <p class="lede">One plug. No fitting room.</p>
     <table class="spec">
       <tr><th>Model</th><td>Layer Station · Gen-2 v0.3</td></tr>
@@ -325,6 +344,7 @@
     <div class="faq__col">
     <details open><summary>How much floor space does it need?</summary><p>The station stands about 1.70 m tall. Leave 1.5–1.8 m clear in front: shoppers stand at a floor mark 1.5 m back, crews at 1.65 m, so the camera frames everyone head to toe.</p></details>
     <details><summary>How long does a try-on take?</summary><p>About 20 seconds from pressing try-on to seeing yourself in the look.</p></details>
+    <details><summary>How long does a pilot run?</summary><p>As long as your drop or event needs. Our first ran for one day, at a brand pop-up in a mall; a run in store can go on for longer.</p></details>
     <details><summary>What do you need from us to start?</summary><p>Your drop: product photos (the front, plus any other angles you have) and the name of each piece. We build the station's skin around your identity and handle install.</p></details>
     </div>
     <div class="faq__col">
@@ -348,9 +368,9 @@
     <span class="backers__k">Part of</span>
     <div class="backers__run">
       <div class="backers__track">
-        <span class="chip"><img loading="lazy" decoding="async" src="assets/marks/GoogleCloudNoBG-sm.png" width="335" height="72" alt="Google Cloud for Startups"></span>
+        <span class="chip chip--nvidia"><img loading="lazy" decoding="async" src="assets/marks/official/nvidia-inception-program.png" width="460" height="168" alt="NVIDIA Inception Program"></span>
         <span class="chip chip--claude"><img loading="lazy" decoding="async" src="assets/marks/official/claude-for-startups.svg" width="418" height="42" alt="Claude for Startups"></span>
-        <span class="chip"><img loading="lazy" decoding="async" src="assets/marks/clickup-color.svg" width="256" height="64" alt="ClickUp for Startups"></span>
+        <span class="chip"><img loading="lazy" decoding="async" src="assets/marks/GoogleCloudNoBG-sm.png" width="335" height="72" alt="Google Cloud for Startups"></span>
         <span class="chip"><img loading="lazy" decoding="async" src="assets/marks/official/startupindia-logo.png" width="300" height="82" alt="Startup India"></span>
         <span class="chip chip--dpiit"><img loading="lazy" decoding="async" src="assets/marks/official/dpiit-recognised.png" width="161" height="160" alt="Recognized by DPIIT, Department for Promotion of Industry and Internal Trade"><span><b>DPIIT-recognised startup</b><small>Cert. No. DIPP243441</small></span></span>
         <span class="chip"><img loading="lazy" decoding="async" src="assets/marks/vnest-mark-sm.png" width="160" height="88" alt="V-NEST, VIT Chennai"></span>
@@ -368,7 +388,7 @@
 <!-- ───────────── CONTACT: LET'S PILOT ───────────── -->
 <section class="win contact" id="contact" aria-label="Let's pilot">
   <div class="contact__copy">
-    <h2 class="h1">Put Layer<br>on your <i>floor.</i></h2>
+    <h2 class="h1">Put Layer<br>on your floor.</h2>
     <p class="lede">Tell us where and when. We reply within a day.</p>
     <a class="key key--line" href="https://wa.me/916383410936" target="_blank" rel="noopener">WhatsApp us</a>
     <p class="contact__mail">hello@miraiinnovations.tech · +91 6383 410936</p>
@@ -426,7 +446,6 @@
   <a class="key key--bone key--sm" href="#contact">Let's pilot <span class="key__go">→</span></a>
 </div>
 
-<script src="assets/molten.js?v=103"></script>
-<script src="app.js?v=103"></script>
+<script src="app.js?v=115"></script>
 </body>
 </html>

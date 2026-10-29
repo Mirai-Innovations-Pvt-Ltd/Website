@@ -70,19 +70,61 @@ gl.uniform3f(U("uCeilC"), num("cr",120), num("cg",110), num("cb",160));
     // zoom: the frame's short side in world units (38 fits the whole loop; far less and only its bands cross the frame)
     const cur = { dim: 1, skin: 0, yaw: 0, tiltAdd: 0, sway: 1, zoom: opts.zoom || 38, dx: 0, dy: 0 }, tgt = { ...cur };
     let fps = opts.fps || 30, raf = 0, t0 = performance.now(), last = 0, dirty = true;
+    // GPU budget (opts.budget, ms per frame of the loop): the render size is a fraction q of the design size, stepped down
+    // until a frame fits the budget and back up while there is room, never above the design size. Where the browser can
+    // time GPU work (EXT_disjoint_timer_query_webgl2) one draw in four is timed; elsewhere a run of dropped frames steps
+    // it down. A weak GPU (most laptops' integrated graphics) gets a slightly softer loop instead of a page that drops frames
+    const tq = opts.budget ? gl.getExtension('EXT_disjoint_timer_query_webgl2') : null;
+    const qMin = opts.minQ || .45, maxFps = opts.fps || 30;
+    let readyAt = 0, warmed = false, q = opts.budget ? (opts.startQ || .6) : 1, query = null, gpu = 0, gpuN = 0, drawN = 0, adaptAt = 0, prevNow = 0, slow = 0, seen = 0, best = 1e9;
+    function adapt(now) {
+      if (query && gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE)) {
+        if (!gl.getParameter(tq.GPU_DISJOINT_EXT)) { const ms = gl.getQueryParameter(query, gl.QUERY_RESULT) / 1e6; gpu = gpuN ? gpu * .6 + ms * .4 : ms; gpuN++; }
+        gl.deleteQuery(query); query = null;
+      }
+      if (prevNow) { const d = now - prevNow; best = Math.min(best * 1.002, d); seen++; if (d > best * 1.7) slow++; }
+      prevNow = now;
+      if (now - adaptAt < 1500) return;
+      adaptAt = now;
+      // past the smallest size it slows instead (a throttled GPU, a laptop on battery): 30 frames a second, then 20, then
+      // 15. It is a slow flow, so fewer frames read as calm, where a smaller frame would read as soft
+      if (tq && gpuN >= 3) {
+        const load = gpu * fps / 30;                            // its share of the GPU, in the budget's terms
+        if (load > opts.budget * 1.15 && q > qMin) { q = Math.max(qMin, q * Math.max(.7, Math.sqrt(opts.budget / gpu))); gpuN = 0; }
+        else if (load > opts.budget * 1.15 && fps > 15) { fps = fps > 20 ? 20 : 15; gpuN = 0; }
+        else if (fps < maxFps && gpu * (fps < 20 ? 20 : maxFps) / 30 < opts.budget) { fps = fps < 20 ? 20 : maxFps; gpuN = 0; }
+        else if (gpu < opts.budget * .55 && q < 1) { q = Math.min(1, q * 1.12); gpuN = 0; }
+      } else if (!tq && seen > 30 && slow / seen > .2) { if (q > qMin) q = Math.max(qMin, q * .85); else if (fps > 20) fps = 20; }
+      slow = seen = 0;
+    }
     function draw(now) {
       raf = requestAnimationFrame(draw);
       if (!ready) {
         if (!failed && !(par && !gl.getProgramParameter(pr, par.COMPLETION_STATUS_KHR))) finish();
         if (failed) { cancelAnimationFrame(raf); raf = 0; }
         if (!ready) return;
+        readyAt = now;
       }
-      if (now - last < 1000 / fps) return;
+      if (opts.budget) adapt(now);
+      // a few ms of slack: on a 60 Hz (or a battery-capped 30 Hz) screen a frame lands a hair early half the time, and
+      // without it a 30 fps loop drops to an uneven 15-20
+      if (now - last < 1000 / fps - 4) return;
       const dt = Math.min(.1, (now - (last || now)) / 1000); last = now;
       const r = cv.getBoundingClientRect();
-      if (cv.dataset.paused === '1' || r.width < 2 || r.bottom < 0 || r.top > innerHeight || document.hidden) return;   // off-screen or hidden: no work
+      const away = cv.dataset.paused === '1' || r.width < 2 || r.bottom < 0 || r.top > innerHeight || document.hidden;
+      // the first draw of a new shader finishes its build on some GPUs (ANGLE on Windows: hundreds of ms, holding every
+      // frame on the screen), so while the loop is still out of sight it is done once, on a single pixel, at a quiet
+      // moment (opts.quiet: nobody scrolling), and the loop's first appearance draws a shader that is already whole
+      if (!warmed && away) {
+        if (opts.quiet && !opts.quiet()) return;
+        if (!FW) { cv.width = FW = TW = 64; cv.height = FH = TH = 36; setup(); }
+        gl.viewport(0, 0, 1, 1); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.viewport(0, 0, FW, FH);
+        warmed = true; return;
+      }
+      warmed = true;
+      if (away) return;                                         // off-screen or hidden: no work
       const dpr = Math.min(devicePixelRatio, 2);
-      const w = Math.max(64, Math.min(opts.maxW || 640, Math.round(r.width * dpr * (opts.scale || 1)))), hh = Math.max(64, Math.round(w * r.height / Math.max(1, r.width)));
+      const w = Math.max(64, Math.round(q * Math.min(opts.maxW || 640, r.width * dpr * (opts.scale || 1)))), hh = Math.max(64, Math.round(w * r.height / Math.max(1, r.width)));
       // reallocate only on a real change (the hero push-in resizes it every frame)
       if (!FW || Math.abs(w - FW) / FW > .08 || Math.abs(hh - FH) / FH > .08) { cv.width = FW = TW = w; cv.height = FH = TH = hh; gl.viewport(0, 0, w, hh); setup(); dirty = true; }
       for (const k in tgt) { const d = tgt[k] - cur[k]; if (Math.abs(d) > 1e-4) { cur[k] += d * Math.min(1, dt * 4); dirty = true; } }
@@ -90,7 +132,8 @@ gl.uniform3f(U("uCeilC"), num("cr",120), num("cg",110), num("cb",160));
       f1('uDim', cur.dim); f1('uSkin', cur.skin); f1('uYaw', cur.yaw); f1('uTiltAdd', cur.tiltAdd); f1('uSway', cur.sway);
       gl.uniform2f(U('uFrame'), FW >= FH ? cur.zoom * FW / FH : cur.zoom, FW >= FH ? cur.zoom : cur.zoom * FH / FW);
       f1('uCx', num('cx', 0) + cur.dx); f1('uCy', num('cy', 0) + cur.dy);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (tq && !query && ++drawN % 4 === 0) { query = gl.createQuery(); gl.beginQuery(tq.TIME_ELAPSED_EXT, query); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.endQuery(tq.TIME_ELAPSED_EXT); }
+      else gl.drawArrays(gl.TRIANGLES, 0, 3);
       if (opts.still && !dirty) { cancelAnimationFrame(raf); raf = 0; }
       dirty = false;
     }
@@ -99,6 +142,7 @@ gl.uniform3f(U("uCeilC"), num("cr",120), num("cg",110), num("cb",160));
       stop() { cancelAnimationFrame(raf); raf = 0; },
       start() { if (!raf && !failed) { last = 0; dirty = true; raf = requestAnimationFrame(draw); } },
       set(o) { Object.assign(tgt, o); if (o.fps) fps = o.fps; dirty = true; if (!raf && !failed) { last = 0; raf = requestAnimationFrame(draw); } },
+      get quality() { return { q: +q.toFixed(3), fps, gpuMs: +gpu.toFixed(2), w: FW, h: FH, timed: !!tq, readyMs: readyAt && Math.round(readyAt - t0) }; },
     };
     } catch (err) { return null; }
   }
