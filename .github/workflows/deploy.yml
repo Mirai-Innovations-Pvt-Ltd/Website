@@ -1,0 +1,36 @@
+# Deploys the site to Cloudflare (settings in wrangler.jsonc): a push to main goes live at miraiinnovations.tech, a push
+# to staging updates the test version's preview link (staging-mirai-website.blesson.workers.dev). Needs the repo
+# secret CLOUDFLARE_API_TOKEN (a Cloudflare token from the "Edit Cloudflare Workers" template).
+name: Deploy
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Live site (main)
+        if: github.ref_name == 'main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          wranglerVersion: '4'
+          command: deploy
+      - name: Test version (staging)
+        if: github.ref_name == 'staging'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          wranglerVersion: '4'
+          command: versions upload --preview-alias staging

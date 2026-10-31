@@ -86,10 +86,11 @@ The page is built to stay smooth on a laptop's integrated graphics. Keep these w
 ## Deploy
 
 Hosted on Cloudflare (Workers static assets, free plan), project `mirai-website`; the domain's DNS is on Cloudflare
-too (registrar: Hostinger). Cloudflare builds straight from this repository:
+too (registrar: Hostinger). GitHub Actions deploys from this repository (`.github/workflows/deploy.yml`, using the
+repo secret `CLOUDFLARE_API_TOKEN`):
 
 - **Live:** a push to `main` goes to https://miraiinnovations.tech.
-- **Test version:** a push to `staging` updates its own preview link (`staging-mirai-website.<account>.workers.dev`).
+- **Test version:** a push to `staging` updates its own preview link (`staging-mirai-website.blesson.workers.dev`).
   Check changes there first, then merge into `main`.
 
 Static requests are free and unlimited, so deploys and test pushes cost nothing. Email (Google Workspace MX, SPF,
