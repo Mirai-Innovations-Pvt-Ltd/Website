@@ -1,0 +1,19 @@
+// miraiinnovations.tech on Cloudflare Workers. site/ is served as static assets (headers from site/_headers);
+// the script in worker/ only answers /api/* (the pilot sheet). Cloudflare builds from GitHub: a push to main goes
+// live, a push to any other branch (staging) gets its own preview link.
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "mirai-website",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./site",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  },
+  "observability": { "enabled": true }
+}

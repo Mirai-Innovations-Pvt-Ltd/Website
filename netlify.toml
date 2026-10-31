@@ -1,4 +1,0 @@
-# Static site: no build step. Netlify serves site/ as it is; headers and redirects live in site/_headers and
-# site/_redirects. The contact form is a Netlify form ("contact"), detected at deploy time.
-[build]
-  publish = "site"

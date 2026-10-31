@@ -11,10 +11,13 @@ The previous Next.js company site is kept at the tag `nextjs-site-final`.
 |---|---|
 | `site/` | Exactly what the domain serves. Static HTML, CSS and JS: no framework, no build step. |
 | `site/index.html`, `app.js`, `style.css` | The page, its behaviour and its styles. |
-| `site/privacy.html`, `terms.html` | Legal pages (drafts, to be reviewed by a lawyer). Served at `/privacy` and `/terms` via `_redirects`. |
+| `site/privacy.html`, `terms.html` | Legal pages (drafts, to be reviewed by a lawyer). Served at `/privacy` and `/terms`. |
 | `site/assets/` | Images (WebP), fonts (self-hosted woff2), kiosk screen media, logos and the 3D station bundle. |
 | `site/_headers` | Security headers (CSP, HSTS, frame and permissions policy) and cache rules. |
 | `site/robots.txt`, `sitemap.xml` | For search engines. The page also carries schema.org data for Mirai Innovations (name, Mirai logo, contacts). |
+| `wrangler.jsonc` | Cloudflare's settings: serve `site/` as static assets, run `worker/` for `/api/*` only. |
+| `worker/index.js` | The only server code: `POST /api/contact`, the pilot sheet. |
+| `worker/enquiries.gs` | The Google Apps Script the form hands enquiries to (a Google Sheet, and a mail to hello@). |
 | `src/station/` | Source of `site/assets/station/station.bundle.js`, the 3D Layer Station in the hero (three.js r170). |
 
 ## Run it locally
@@ -36,8 +39,11 @@ Then open http://127.0.0.1:5190.
 - **Inline scripts:** the CSP in `site/_headers` only allows inline scripts by hash. If you add or change one, update its
   `sha256-` hash there, or it will be blocked in production. (JSON-LD data blocks are not affected.)
 - **3D station:** edit `src/station/station.js`, then `cd src/station && npm install && npm run build`.
-- **Contact form:** the pilot sheet is the Netlify form `contact`. Netlify detects it at deploy time from the
-  `data-netlify` attribute; notifications go to hello@miraiinnovations.tech (set in the Netlify UI).
+- **Contact form:** the pilot sheet posts to `/api/contact`. `worker/index.js` checks it and passes it to the Apps
+  Script web app whose URL is the Worker's `FORM_HOOK` secret (Cloudflare dashboard > the Worker > Settings >
+  Variables and Secrets). The script (`worker/enquiries.gs`, bound to the "Layer pilot enquiries" sheet in Google
+  Drive) adds a row and mails hello@miraiinnovations.tech. Sends from the test version are marked `[test: …]`.
+  Without the secret, or locally, the form offers WhatsApp or mail instead.
 
 ## Performance rules
 
@@ -79,6 +85,13 @@ The page is built to stay smooth on a laptop's integrated graphics. Keep these w
 
 ## Deploy
 
-Hosted on Netlify (project `glowing-kashata-c5f5da`), with DNS at Hostinger. The repository is not linked to Netlify
-right now: deploys are uploaded by hand under **Deploys**, from the contents of `site/`. To deploy from GitHub
-instead, link this repository in Netlify. `netlify.toml` already publishes `site/` with no build command.
+Hosted on Cloudflare (Workers static assets, free plan), project `mirai-website`; the domain's DNS is on Cloudflare
+too (registrar: Hostinger). Cloudflare builds straight from this repository:
+
+- **Live:** a push to `main` goes to https://miraiinnovations.tech.
+- **Test version:** a push to `staging` updates its own preview link (`staging-mirai-website.<account>.workers.dev`).
+  Check changes there first, then merge into `main`.
+
+Static requests are free and unlimited, so deploys and test pushes cost nothing. Email (Google Workspace MX, SPF,
+DKIM, DMARC) stays in Cloudflare's DNS as it was; keep Cloudflare Email Routing and Email Obfuscation off (the CSP
+would block the obfuscation script).

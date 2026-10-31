@@ -239,7 +239,7 @@
   const inputsIn = () => inputs >= 5;
   const loadStation = () => new Promise((ok, no) => {
     if (window.LayerStation) { inputs++; return ok(window.LayerStation); }
-    const s = document.createElement('script'); s.src = 'assets/station/station.bundle.js?v=115'; s.async = true;
+    const s = document.createElement('script'); s.src = 'assets/station/station.bundle.js?v=116'; s.async = true;
     s.onload = () => { inputs++; return window.LayerStation ? ok(window.LayerStation) : no(new Error('station script loaded empty')); };
     s.onerror = () => no(new Error('station script failed to load')); document.head.appendChild(s);
   });
@@ -796,7 +796,7 @@
   function mountStream() {
     if (streamAsked) return; streamAsked = true;
     if (!('Molten' in window)) {
-      const sc = document.createElement('script'); sc.src = 'assets/molten.js?v=115'; sc.async = true;
+      const sc = document.createElement('script'); sc.src = 'assets/molten.js?v=116'; sc.async = true;
       sc.onload = () => { streamAsked = false; if (window.Molten) mountStream(); else streamCv.remove(); };
       sc.onerror = () => streamCv.remove(); document.head.appendChild(sc); return;
     }
@@ -1000,9 +1000,9 @@
   /* ───────────── FAQ: the metal turns with each answer ───────────── */
   $$('.faq details').forEach((d) => d.addEventListener('toggle', () => spin(d.open ? Math.PI / 2 : -Math.PI / 2)));
 
-  /* ───────────── YOUR PILOT sheet: a good send posts to Netlify Forms (the "contact" form, the old site's inbox and
-     its mail alerts) and the metal turns once. Where there is no form handler (a preview host, offline) it writes the
-     message for WhatsApp or mail instead, so nothing typed is lost ───────────── */
+  /* ───────────── YOUR PILOT sheet: a good send posts to /api/contact (the site's Worker, which files it in the
+     enquiries sheet and mails hello@) and the metal turns once. Where there is no form handler (a local server,
+     offline) it writes the message for WhatsApp or mail instead, so nothing typed is lost ───────────── */
   const form = $('#pilotForm');
   let sending = false;
   form.addEventListener('input', () => { $('#fDone').hidden = true; $('#fSent').hidden = true; });
@@ -1027,7 +1027,7 @@
     sending = true; $('#fGo').disabled = true; $('#fGo').setAttribute('aria-busy', 'true');
     let sent = false;
     try {
-      const res = await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(new FormData(form)).toString() });
+      const res = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(new FormData(form)).toString() });
       sent = res.ok;
     } catch (err) { sent = false; }
     sending = false; $('#fGo').disabled = false; $('#fGo').removeAttribute('aria-busy');
