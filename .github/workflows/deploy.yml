@@ -1,6 +1,7 @@
 # Deploys the site to Cloudflare (settings in wrangler.jsonc): a push to main goes live at miraiinnovations.tech, a push
 # to staging updates the test version's preview link (staging-mirai-website.blesson.workers.dev). Needs the repo
-# secret CLOUDFLARE_API_TOKEN (a Cloudflare token from the "Edit Cloudflare Workers" template).
+# secret CLOUDFLARE_API_TOKEN (a Cloudflare token from the "Edit Cloudflare Workers" template), and FORM_HOOK (the pilot
+# sheet's Apps Script web app URL, kept out of this public repo; see worker/index.js).
 name: Deploy
 
 on:
@@ -27,6 +28,9 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           wranglerVersion: '4'
           command: deploy
+          secrets: FORM_HOOK
+        env:
+          FORM_HOOK: ${{ secrets.FORM_HOOK }}
       - name: Test version (staging)
         if: github.ref_name == 'staging'
         uses: cloudflare/wrangler-action@v3
@@ -34,3 +38,6 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           wranglerVersion: '4'
           command: versions upload --preview-alias staging
+          secrets: FORM_HOOK
+        env:
+          FORM_HOOK: ${{ secrets.FORM_HOOK }}

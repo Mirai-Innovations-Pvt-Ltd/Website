@@ -1,7 +1,7 @@
 // The site's only server code. Cloudflare serves site/ as static assets and runs this for /api/* alone.
-// POST /api/contact takes the pilot sheet and hands it to the Google Apps Script web app in FORM_HOOK (a secret set
-// in the Cloudflare dashboard, never in this public repo), which adds a row to the enquiries sheet and mails hello@.
-// The script's source is worker/enquiries.gs.
+// POST /api/contact takes the pilot sheet and hands it to the Google Apps Script web app in FORM_HOOK (a secret the
+// deploy passes in from the GitHub repo secret of the same name, never in this public repo), which adds a row to the
+// enquiries sheet and mails hello@. The script's source is worker/enquiries.gs.
 
 const FIELDS = { role: 20, name: 80, company: 80, city: 80, phone: 20, email: 120, when: 200, message: 1500 };
 

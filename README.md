@@ -40,8 +40,8 @@ Then open http://127.0.0.1:5190.
   `sha256-` hash there, or it will be blocked in production. (JSON-LD data blocks are not affected.)
 - **3D station:** edit `src/station/station.js`, then `cd src/station && npm install && npm run build`.
 - **Contact form:** the pilot sheet posts to `/api/contact`. `worker/index.js` checks it and passes it to the Apps
-  Script web app whose URL is the Worker's `FORM_HOOK` secret (Cloudflare dashboard > the Worker > Settings >
-  Variables and Secrets). The script (`worker/enquiries.gs`, bound to the "Layer pilot enquiries" sheet in Google
+  Script web app whose URL is the Worker's `FORM_HOOK` secret (set from the GitHub repo secret of the same name on
+  every deploy). The script (`worker/enquiries.gs`, bound to the "Layer pilot enquiries" sheet in Google
   Drive) adds a row and mails hello@miraiinnovations.tech. Sends from the test version are marked `[test: …]`.
   Without the secret, or locally, the form offers WhatsApp or mail instead.
 
