@@ -21,23 +21,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # the form's secret goes up with each upload (a separate secret upload fails while a test version is newer than
+      # the live one); the file stays on the runner
+      - name: Secrets file
+        run: echo "FORM_HOOK=$FORM_HOOK" > "$RUNNER_TEMP/secrets.env"
+        env:
+          FORM_HOOK: ${{ secrets.FORM_HOOK }}
       - name: Live site (main)
         if: github.ref_name == 'main'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           wranglerVersion: '4'
-          command: deploy
-          secrets: FORM_HOOK
-        env:
-          FORM_HOOK: ${{ secrets.FORM_HOOK }}
+          command: deploy --secrets-file ${{ runner.temp }}/secrets.env
       - name: Test version (staging)
         if: github.ref_name == 'staging'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           wranglerVersion: '4'
-          command: versions upload --preview-alias staging
-          secrets: FORM_HOOK
-        env:
-          FORM_HOOK: ${{ secrets.FORM_HOOK }}
+          command: versions upload --preview-alias staging --secrets-file ${{ runner.temp }}/secrets.env
