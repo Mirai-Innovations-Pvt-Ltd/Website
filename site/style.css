@@ -1,6 +1,5 @@
 /* Layer website prototype. Tokens are the kiosk's own (layer-brand v0.1.0). One committed dark look.
-   Layout: a run of one-window scenes (.win) that snap into frame; two pinned stages (hero, how it works) carry their own
-   snap marks. The page is translucent over one living flow of liquid metal (the chrome the kiosk's S5 ring is made of).
+   Layout: a run of one-window scenes (.win) that snap into frame; the hero is a pinned stage with its own snap marks. The page is translucent over one living flow of liquid metal (the chrome the kiosk's S5 ring is made of).
    Stitched threads run on every band. */
 :root {
   color-scheme: dark;
@@ -19,13 +18,10 @@
 /* the scrollbar's room is kept even while the opening holds the page still, so its return at the landing changes no
    width (no relayout of the whole page, no 3D frame built for a wider page). The root's clientWidth still counts the
    gutter as page then: app.js reads the body's */
-html { scroll-behavior: smooth; scroll-snap-type: y proximity; scrollbar-gutter: stable; }
-/* a mouse or trackpad never meets CSS snap: on a tall enough window app.js snaps each gesture to the next scene; on a
-   short one (a 1366 x 768 laptop, or 1080p at 150%) the page scrolls freely. Proximity snap there pulled every wheel notch
-   back to the scene's start, and the page could not be scrolled past One pose */
-@media (pointer: fine) { html { scroll-snap-type: none; } }
-html.is-legal { scroll-snap-type: none; }
-@media (pointer: coarse) { .how .snap { scroll-snap-align: none; } }
+/* no CSS scroll snap anywhere (v117): on a desktop app.js lands each mouse notch on the next scene; trackpads, touch
+   screens and phones scroll freely. Proximity snap pulled wheel notches back on short laptops (v108), and pulled
+   swipes back 250-410 px on iPads and other wide touch screens (the same bug v109 fixed for How alone) */
+html { scroll-behavior: smooth; scrollbar-gutter: stable; }
 body { margin: 0; background: var(--void); color: var(--bone); font: 400 17px/1.55 var(--display); font-variation-settings: 'wdth' 100; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 img { display: block; max-width: 100%; }
 /* the hidden attribute always wins: author display rules (img above) would otherwise un-hide fallbacks like #kioskFlat */
@@ -52,17 +48,16 @@ em { font-style: normal; font: 500 11px var(--mono); letter-spacing: .08em; colo
 .key__go { display: inline-grid; place-items: center; width: 26px; height: 26px; background: var(--event); color: var(--ink); font-size: 14px; }
 .key--sm .key__go { width: 20px; height: 20px; }
 
-/* ── threads: the band's stitches, fed sideways like thread through a machine. Scroll speed melts the stitches into
-      one chrome line (--melt is set per thread by app.js); they set back into stitches when the page comes to rest ── */
-.thread { position: absolute; left: 0; right: 0; height: 1.5px; overflow: hidden; pointer-events: none; --melt: 0; }
+/* ── threads: the band's stitches, fed sideways like thread through a machine, at one pace while the reader moves the
+      page (v117: nothing melts or speeds up with scroll speed; the chrome sheen it used is gone) ── */
+.thread { position: absolute; left: 0; right: 0; height: 1.5px; overflow: hidden; pointer-events: none; }
 .thread--top { top: 7px; } .thread--bot { bottom: 7px; }
 .thread::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; right: -44px;
-  background: repeating-linear-gradient(90deg, rgba(247, 245, 241, calc(.3 + var(--melt) * .4)) 0 calc(12px + var(--melt) * 10px), transparent 0 22px);
+  background: repeating-linear-gradient(90deg, rgba(247, 245, 241, .3) 0 12px, transparent 0 22px);
   animation: feed 1.6s linear infinite; }
-.thread::after { content: ''; position: absolute; top: 0; bottom: 0; left: -360px; right: 0; background: var(--chrome) 0 0 / 360px 100%; opacity: calc(var(--melt) * .9); animation: sheen 2.4s linear infinite; }
 /* the stitches hold still at rest: the liquid metal is the page's one standing motion; they feed only while it moves */
-.thread::before, .thread::after { animation-play-state: paused; }
-html.moving .thread::before, html.moving .thread::after { animation-play-state: running; }
+.thread::before { animation-play-state: paused; }
+html.moving .thread::before { animation-play-state: running; }
 @keyframes feed { to { transform: translateX(-22px); } }
 @keyframes sheen { to { transform: translateX(360px); } }
 
@@ -80,7 +75,6 @@ main:focus { outline: none; }
 .lockup__by small { font: 600 calc(14 * var(--u)) / 1 var(--mono); letter-spacing: .06em; color: var(--bone); opacity: .9; }
 .lockup__by img { display: block; height: calc(24 * var(--u)); width: auto; }
 .band__brand { flex: none; text-decoration: none; }
-html.splashing .band__brand { opacity: 0; }
 .band__nav { display: flex; gap: 26px; margin-left: auto; }
 /* nav labels: wide caps (the kiosk's key face); on hover the word rolls over, like the bands */
 .band__nav a { position: relative; display: block; overflow: hidden; padding: 4px 0; font: 700 13px/1.25 var(--display); font-variation-settings: 'wdth' 115; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; color: var(--text-2); transition: color .25s; }
@@ -95,42 +89,9 @@ html.splashing .band__brand { opacity: 0; }
 .pin-go { position: fixed; top: 14px; right: var(--gut); z-index: 49; transform: translateY(-180%); transition: transform .5s var(--out); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
 .past-hero:not(.at-contact) .band.is-hidden + .pin-go { transform: none; }
 
-/* ── the opening: layer is written on stroke by stroke, by Mirai arrives slowly, and the lockup flies to the band ── */
-html.splashing { overflow: hidden; }
-.splash { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: var(--void); animation: splash-out .5s ease 6s forwards; }
-/* on a very slow line the page's script may not run for a long while: the dark screen then steps aside by itself after
-   6 s (the page under it shows), and the script skips the opening. Once the script starts the opening, this never runs */
-html.splashing .splash { animation: none; }
-@keyframes splash-out { to { opacity: 0; visibility: hidden; } }
-.splash::before { content: ''; position: absolute; inset: 0; background: radial-gradient(50% 45% at 50% 48%, rgba(91, 65, 196, .16), transparent 70%); pointer-events: none; }
-.splash__art { position: relative; --u: calc(min(76vw, 980px) / 218); transform-origin: 0 0; }
-.iw { stroke-dasharray: 1 1.05; stroke-dashoffset: 1.02; }
-.splash.go .iw { animation: write var(--d) cubic-bezier(.5, .05, .35, 1) var(--t) forwards; }
-.iw--l, .ink--l { --t: .05s; --d: .22s; } .iw--a, .ink--a { --t: .2s; --d: .3s; } .iw--y, .ink--y { --t: .42s; --d: .24s; }
-.iw--e, .ink--e { --t: .6s; --d: .28s; } .iw--r, .ink--r { --t: .82s; --d: .2s; }
-@keyframes write { to { stroke-dashoffset: 0; } }
-/* as each stroke ends, its letter settles in whole: the mark always lands exactly as drawn, no edge lost to the pen */
-.ink { opacity: 0; }
-.splash.go .ink { animation: ink .22s ease-out calc(var(--t) + var(--d) - .05s) forwards; }
-@keyframes ink { to { opacity: 1; } }
-.splash.go .splash__layer { animation: pen-off .15s linear 1.12s forwards; }       /* then the pen's layer leaves, so no edge is doubled */
-@keyframes pen-off { to { opacity: 0; } }
-.splash.done .splash__layer { animation: none; opacity: 0; }
-/* BY rises in, then Mirai is drawn across behind a soft edge, in full colour; the whole opening is under three seconds */
-.splash .splash__by { opacity: 0; transform: translateY(.4em); }
-.splash.go .splash__by { animation: by-in .5s cubic-bezier(.2, .7, .2, 1) .85s forwards; }
-@keyframes by-in { to { opacity: .9; transform: none; } }
-.splash .splash__mirai { -webkit-mask: linear-gradient(90deg, #000 42%, transparent 58%) 100% 0 / 280% 100% no-repeat; mask: linear-gradient(90deg, #000 42%, transparent 58%) 100% 0 / 280% 100% no-repeat; }
-.splash.go .splash__mirai { animation: mirai-in .75s cubic-bezier(.35, .1, .25, 1) .98s forwards; }
-@keyframes mirai-in { to { -webkit-mask-position: 0 0; mask-position: 0 0; } }
-.splash.done .iw { animation: none; stroke-dashoffset: 0; }
-.splash.done .ink { animation: none; opacity: 1; }
-.splash.done .splash__by { animation: none; opacity: .9; transform: none; }
-.splash.done .splash__mirai { animation: none; -webkit-mask: none; mask: none; }
-
 /* ── one-window scenes; each snaps to its start ── */
 .win { grid-template-columns: minmax(0, 1fr); min-height: 100vh; min-height: 100svh; padding: calc(var(--band) + clamp(20px, 4.5vh, 56px)) var(--gut) clamp(24px, 4.5vh, 56px); max-width: calc(var(--maxw) + 2 * var(--gut)); margin: 0 auto; display: grid; align-content: center; scroll-snap-align: start; position: relative; }
-/* snap marks inside the pinned stages: --at is how far through the stage's scroll the mark sits */
+/* snap marks inside the hero's pinned stage: --at is how far through the stage's scroll the mark sits */
 .snap { position: absolute; left: 0; width: 1px; height: 1px; top: calc(var(--at) * (100% - 100vh)); top: calc(var(--at) * (100% - 100svh)); scroll-snap-align: start; pointer-events: none; }
 
 /* ── living metal: the S5 chrome as one huge flow behind the whole (translucent) page ── */
@@ -168,11 +129,11 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
 .hero__flat { position: absolute; left: 57.77%; top: 22.8%; width: 11.94%; height: 71.91%; }
 .hero__screen { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; background: #000; container-type: inline-size; visibility: hidden; }
 .hero__screen.on { visibility: visible; }
-#wipe { position: absolute; left: 0; right: 0; top: 10.56cqw; height: calc(100% - 10.56cqw); width: 100%; transition: opacity .7s; }
+#wipe { position: absolute; left: 0; right: 0; top: 10.56cqw; height: calc(100% - 10.56cqw); width: 100%; transition: opacity .25s; }
 .hero__screen::after { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255, 255, 255, .07) 0 18%, transparent 30%); pointer-events: none; }
 /* off, the try-on UI is still drawn, at an invisible .2% (it is inert until on): its first real appearance then needs
    no rasterising, which on a laptop's graphics is a visible hitch at the end of the push */
-.kui { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; opacity: .002; transition: opacity .6s; }
+.kui { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; opacity: .002; transition: opacity .25s; }
 .kui.on { opacity: 1; }
 .kui { justify-content: flex-end; }
 .kui__tag { position: absolute; top: 13.5cqw; left: 5cqw; font: 600 3.2cqw var(--mono); letter-spacing: .1em; color: var(--ink); background: var(--lilac); padding: 1.2cqw 2.2cqw; }
@@ -213,7 +174,7 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
    distance); this pinned screen then carries only the try-on, and the band arrives with it */
 .hero.is-3d .hero__screen { background: none; }
 .hero.is-3d .scr-s5 { display: none; }
-.hero.is-3d .hero__screen .scr-band { opacity: 0; transition: opacity .7s; }
+.hero.is-3d .hero__screen .scr-band { opacity: 0; transition: opacity .25s; }
 .hero.is-3d .hero__screen.is-try .scr-band { opacity: 1; }
 /* one band across every state: the kiosk's real band never changes from screen to screen */
 .scr-band { position: absolute; left: 0; top: 0; z-index: 7; width: 100%; height: auto; pointer-events: none; }
@@ -234,50 +195,71 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
 .pose__look img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 16%; }
 .pose__tag { position: absolute; z-index: 5; top: 5%; left: 6%; font: 600 13px var(--mono); letter-spacing: .1em; color: var(--ink); background: var(--lilac); padding: 6px 10px; white-space: nowrap; }
 
-/* ── how it works: pinned, one window; each state plays its own beat on the screen ── */
-/* each step's share of the scroll is set by what it shows (app.js: W): 270vh of film, plus the pinned window */
-.how { position: relative; height: 370vh; }
+/* ── how it works: one window. The story plays itself on the screen (app.js), and nothing in it follows the scroll ── */
+.win.how { display: block; padding: 0; max-width: none; min-height: 100vh; min-height: 100svh; }
 .how__copy .h1 { font-size: clamp(34px, 3.9vw, 62px); }
-.how__stage { position: sticky; top: 0; height: 100vh; height: 100svh; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(40px, 6vw, 104px); align-items: center; padding: calc(var(--band) + 3vh) var(--gut) 3vh; max-width: calc(var(--maxw) + 2 * var(--gut)); margin: 0 auto; }
+.how__stage { position: relative; min-height: 100vh; min-height: 100svh; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(40px, 6vw, 104px); align-items: center; padding: calc(var(--band) + 3vh) var(--gut) 3vh; max-width: calc(var(--maxw) + 2 * var(--gut)); margin: 0 auto; }
 /* the steps hold still: the one in play is full size and bone, the rest sit smaller and quiet (a scale, so no row ever
    moves); what the step means shows in one fixed slot below them */
 .how__steps { list-style: none; margin: clamp(22px, 4vh, 40px) 0 0; padding: 0; display: grid; gap: clamp(2px, .8vh, 8px); max-width: 560px; }
 .how__steps button { all: unset; cursor: pointer; display: flex; align-items: baseline; gap: 18px; }
 .how__steps button:focus-visible { outline: 2px solid var(--lilac); outline-offset: 4px; }
-.how__steps b { font: 600 12px var(--mono); letter-spacing: .16em; color: var(--steel); width: 22px; }
+/* (the numerals are quiet: the bar under them is the progress, the list only names the steps) */
+.how__steps b { font: 600 12px var(--mono); letter-spacing: .16em; color: rgba(138, 143, 153, .5); width: 22px; }
 .how__steps span { font: 800 clamp(20px, 2vw, 28px)/1.1 var(--display); font-variation-settings: 'wdth' 118; text-transform: uppercase; color: var(--steel); transform: scale(.74); transform-origin: 0 70%; transition: color .3s, transform .35s var(--out); }
-.how__steps li.on b { color: var(--lilac); }
+.how__steps li.on b { color: var(--text-2); }
 .how__steps li.on span { color: var(--bone); transform: none; }
 .how__say { display: grid; margin: 14px 0 0 40px; max-width: 46ch; }
 .how__say p { grid-area: 1 / 1; margin: 0; color: var(--text-2); font-size: 15px; opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .35s var(--out); }
 .how__say p.on { opacity: 1; transform: none; }
-.how__track { display: flex; align-items: center; gap: 14px; margin-top: clamp(18px, 3vh, 30px); max-width: 560px; }
-.how__count { display: none; font: 600 12px var(--mono); letter-spacing: .14em; color: var(--steel); white-space: nowrap; }
-/* progress: a stitched thread that fills with bone as you go */
-.thread--progress { position: relative; left: auto; right: auto; height: 2px; max-width: 560px; flex: 1; }
-.thread--progress b, .thread--progress i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; transform: scaleX(0); transform-origin: 0 0; background: var(--bone); z-index: 1; }
-/* the next stretch fills faintly while a step rests: when it is full, the film plays on by itself */
-.thread--progress i { opacity: .35; }
-/* five stretches, one per step */
-.how__bar::after { content: ''; position: absolute; inset: -2px 0; z-index: 2; pointer-events: none;
-  background: linear-gradient(90deg, transparent calc(20% - 3px), var(--void) calc(20% - 3px) 20%, transparent 20% calc(40% - 3px), var(--void) calc(40% - 3px) 40%,
-    transparent 40% calc(60% - 3px), var(--void) calc(60% - 3px) 60%, transparent 60% calc(80% - 3px), var(--void) calc(80% - 3px) 80%, transparent 80%); }
+.how__track { display: flex; align-items: center; margin-top: clamp(22px, 3.4vh, 34px); max-width: 560px; }
+.how__track:empty { display: none; }
+/* the player under the steps (app.js: THE BAR). The bar is the film's clock, one segment per step: the steps before are
+   full, the one in play fills as it plays (its move, then its rest), the next one's track is lighter (where a click
+   goes). The forward key at its end is bone and the heaviest thing here: it jumps to the next step now, and on the last
+   it starts again. The pause key is an outline, lighter. The screen itself is a forward click too (hovering it lights
+   the forward key). No lime: lime is GO only */
+.play { flex: 1; display: flex; align-items: center; gap: 14px; }
+.play__bar { flex: 1; display: flex; gap: 6px; }
+.play__seg { all: unset; flex: 1; height: 32px; display: grid; align-items: center; cursor: pointer; }
+.play__seg i { position: relative; display: block; height: 4px; overflow: hidden; background: rgba(247, 245, 241, .17); box-shadow: 0 0 0 1px rgba(8, 7, 10, .5); transition: background-color .25s; }
+.play__seg i::after { content: ''; position: absolute; inset: 0; background: var(--bone); transform-origin: 0 50%; transform: scaleX(var(--k, 0)); }
+.play__seg.is-next i { background: rgba(236, 230, 255, .42); }
+.play__seg:hover i { background: rgba(236, 230, 255, .6); }
+.play__next { all: unset; flex: none; width: 48px; height: 48px; display: grid; place-items: center; background: var(--bone); color: var(--ink); clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); cursor: pointer; transition: background-color .2s; }
+.play__next svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: square; overflow: visible; }
+.play__arrow { transition: transform .25s var(--out); }
+.play__again, .play__next.is-end .play__arrow { display: none; }
+.play__next.is-end .play__again { display: inline; }
+.play__next:hover, .how:has(.device:hover) .play__next { background: #fff; }
+.play__next:hover .play__arrow, .how:has(.device:hover) .play__arrow { transform: translateX(3px); }
+.play__pause { all: unset; flex: none; width: 40px; height: 40px; display: grid; place-items: center; color: var(--mist); box-shadow: inset 0 0 0 1.5px rgba(236, 230, 255, .5); cursor: pointer; transition: box-shadow .2s, color .2s; }
+.play__pause:hover { color: var(--bone); box-shadow: inset 0 0 0 1.5px var(--mist); }
+/* pause: two bars; paused (or reduced motion): a play triangle */
+.play__pause i { width: 10px; height: 12px; box-shadow: inset 3px 0 0 currentColor, inset -3px 0 0 currentColor; }
+.play.is-paused .play__pause i { width: 0; height: 0; margin-left: 3px; border-style: solid; border-width: 6px 0 6px 10px; border-color: transparent transparent transparent currentColor; box-shadow: none; }
+.play__next:focus-visible, .play__pause:focus-visible { outline: 2px solid var(--lilac); outline-offset: 3px; }
+@media (pointer: coarse) { .play__seg { height: 44px; } .play__next { width: 52px; height: 52px; } .play__pause { width: 44px; height: 44px; } }
 
 /* the station: the 3D model's own head, rendered turned; the screen is pinned onto its glass */
 /* only the head, down to the screen's lower bezel: the camera box and the base fall away, so the real screens show large */
-.device { position: relative; height: min(calc(100svh - var(--band) - 6vh), 860px); aspect-ratio: 900 / 1190; overflow: hidden; -webkit-mask: linear-gradient(#000 95%, transparent); mask: linear-gradient(#000 95%, transparent); }
+.device { position: relative; cursor: pointer; height: min(calc(100svh - var(--band) - 6vh), 860px); aspect-ratio: 900 / 1190; overflow: hidden; -webkit-mask: linear-gradient(#000 95%, transparent); mask: linear-gradient(#000 95%, transparent); }
 .device__frame { position: absolute; left: 0; top: 0; width: 100%; height: auto; aspect-ratio: 900 / 1576; }
 .device__screen { position: absolute; left: 0; top: 0; width: 540px; height: 960px; transform-origin: 0 0; overflow: hidden; background: #000; container-type: inline-size; }
 .hs { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .hs--a { z-index: 1; } .hs--b { z-index: 2; opacity: 0; } .hs--scrim { z-index: 3; opacity: 0; } .hs--sheet { z-index: 4; opacity: 0; }
 /* S5 and every beat between screens (the kiosk's s4-up, s4-fade, s4-sheet-in, its tap and the capture flash, kiosk px
    halved for the 540 screen) are drawn by app.js at any point of the move, so the scroll can play them both ways */
-.hs-s5 { position: absolute; inset: 0; z-index: 5; opacity: 0; visibility: hidden; }
+.hs-s5 { position: absolute; inset: 0; z-index: 5; opacity: 0; visibility: hidden; overflow: hidden; will-change: transform; }
+/* S5 rises from PUT IT ON ME: the frame moves up while its content counter-moves (app.js), so it reads as an edge. In
+   step 5 the ring swells about its own hole (266, 472 in the 540 x 960 frame) */
+.hs-s5__in { position: absolute; inset: 0; will-change: transform; transform-origin: 266px 472px; }
+/* step 5: her photo, over S5, opening out of the ring's hole (a circle clip, app.js), then settling into S6's card */
+.hs--her { z-index: 6; opacity: 0; visibility: hidden; transform-origin: 0 0; will-change: transform; }
 /* a press: where the shopper's finger lands */
 .hs-tap { position: absolute; z-index: 8; left: calc(var(--x, .5) * 100%); top: calc(var(--y, .5) * 100%); width: 16%; aspect-ratio: 1; border-radius: 50%; translate: -50% -50%; background: radial-gradient(closest-side, rgba(255, 255, 255, .55), rgba(255, 255, 255, .15) 70%, transparent); box-shadow: 0 0 0 2px rgba(255, 255, 255, .9); opacity: 0; pointer-events: none; }
 /* the capture */
 .hs-flash { position: absolute; inset: 0; z-index: 9; background: #fff; opacity: 0; pointer-events: none; }
-#hsEnd { transition: opacity .3s; }
 .how__kiosk { position: relative; }
 
 /* ── crew: inside a brand experience room ── */
@@ -423,10 +405,18 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
 
 /* ── machine ── */
 .machine { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 80px); align-items: center; }
-.machine__shot { position: relative; margin: 0; }
-.machine__shot img { width: 100%; aspect-ratio: 1; max-height: 74svh; object-fit: cover; object-position: 42% 50%; }
-.pin { position: absolute; left: var(--x); top: var(--y); font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--mist); padding-left: 44px; white-space: nowrap; transform: translateY(-50%); }
-.pin::before { content: ''; position: absolute; left: 0; top: 50%; width: 36px; height: 1px; background: var(--mist); opacity: .6; }
+/* the picture is a portrait (station-tall.webp, 940 x 1550, its edges feathered into its alpha), sized by the window's
+   height and shown whole: the box has the picture's own shape, so nothing is ever cropped, and the pins sit in the
+   picture's own coordinates (% of the box = % of the picture) */
+/* (centred in its column: the kiosk and its labels sit as one group, with no dead stretch between it and the copy) */
+.machine__shot { position: relative; margin: 0; justify-self: center; container-type: inline-size;
+  --sh: min(84svh, 900px, calc(100svh - var(--band) - 2 * clamp(24px, 4.5vh, 56px)));
+  width: min(100%, calc(var(--sh) * 940 / 1550)); aspect-ratio: 940 / 1550; }
+.machine__shot img { width: 100%; height: 100%; object-fit: contain; }
+/* a pin: a bone dot on the part itself, a leader long enough to clear the kiosk (--l), then the words on the studio */
+.pin { --l: 36px; position: absolute; left: var(--x); top: var(--y); font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--mist); padding-left: calc(var(--l) + 8px); white-space: nowrap; transform: translateY(-50%); }
+.pin::before { content: ''; position: absolute; left: 0; top: 50%; width: var(--l); height: 1px; background: var(--mist); opacity: .6; }
+.pin::after { content: ''; position: absolute; left: -2px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: var(--bone); }
 .machine__copy .lede { margin-top: 14px; }
 .spec { width: 100%; border-collapse: collapse; margin-top: clamp(20px, 3vh, 30px); }
 .spec th, .spec td { text-align: left; padding: 10px 0; border-top: 1px solid var(--line); vertical-align: top; }
@@ -583,7 +573,6 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
 /* ── phones ── */
 @media (max-width: 860px) {
   :root { --band: 58px; }
-  html { scroll-snap-type: none; }
   .band { gap: 12px; }
   .band > .key, .pin-go { display: none; }
   .band { padding-left: var(--gut); }
@@ -593,7 +582,9 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
   .band__nav.open { display: flex; }
   .band__nav a { padding: 14px 0; font-size: 15px; border-bottom: 1px solid var(--line); }
   .win { min-height: auto; padding-top: calc(var(--band) + 36px); padding-bottom: 56px; }
-  .hero { height: 240vh; }
+  /* a phone's act one is longer (app.js: ACT .6 of the scroll): one ordinary swipe covers a third to a half of the push,
+     not all of it (v117 round 2; it was 240vh with the push in the first .42) */
+  .hero { height: 360vh; }
   .hero__say { bottom: calc(96px + env(safe-area-inset-bottom)); right: var(--gut); }
   .hero__line { font-size: clamp(26px, 8.4vw, 34px); }
   .hero__sub { font-size: 11px; }
@@ -624,7 +615,6 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
   .loupe { width: 62%; }
   .loupe--max { right: -44%; }
   .prints__table { height: 92vw; }
-  .how { height: 440vh; }
   .how__stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; align-items: start; gap: 18px; padding-top: calc(var(--band) + 18px); padding-bottom: 86px; }
   .how__copy .h1 { font-size: 30px; }
   .how__steps { margin-top: 14px; gap: 2px; }
@@ -633,9 +623,9 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
   .how__steps span { font-size: 22px; transform: none; }
   .how__say { margin: 6px 0 0 40px; }
   .how__track { margin-top: 10px; }
-  .how__count { display: block; }
+  .play { gap: 10px; }
   .how__kiosk { justify-self: center; }
-  .device { height: min(58svh, 540px, calc((100vw - 2 * var(--gut)) * 1190 / 900)); }
+  .device { height: min(58svh, 720px, calc((100vw - 2 * var(--gut)) * 1190 / 900)); }   /* (720: a portrait tablet's kiosk fills its window) */
 
   .vs__art { aspect-ratio: 3 / 4; max-height: none; }
   .readout li { grid-template-columns: 30px 1fr; row-gap: 4px; }
@@ -658,20 +648,28 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
   .seg--role span { padding: 16px 15px; }
   .mbar .key { flex: 1; justify-content: center; }
   .mbar .key--bone { flex: 2; }
-  .pin { font-size: 11px; letter-spacing: .06em; padding-left: 20px; white-space: normal; width: 40%; line-height: 1.25; }
-  .pin::before { width: 14px; top: .6em; }
-  .machine .pin { left: calc(var(--x) + 5%); }
+  /* phones and portrait tablets: centred, sized by the window's height (an iPad's kiosk about as tall as v116's) */
+  .machine__shot { --sh: min(66svh, 900px); }
+  /* the quick-action bar steps aside while How it works is in view: the kiosk's own keys (TRY ANOTHER, FINISH) are the
+     story's last frame, and two rows of keys under it read as clutter */
+  .in-how .mbar { transform: translateY(110%); }
+  .pin { --l: 14px; font-size: 11px; letter-spacing: .06em; padding-left: calc(var(--l) + 6px); white-space: normal; width: 44%; line-height: 1.25; transform: translateY(-.6em); }
+  .pin::before, .pin::after { top: .6em; }
 }
 @media (max-width: 960px) and (max-height: 500px) and (orientation: landscape) {
   .how__stage { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 1fr; align-items: center; padding-top: calc(var(--band) + 8px); padding-bottom: 8px; }
   .how__copy .h1 { font-size: 24px; }
   .device { height: calc(100svh - var(--band) - 20px); }
+  .machine { grid-template-columns: auto minmax(0, 1fr); padding-top: calc(var(--band) + 12px); padding-bottom: 12px; }
+  .machine__shot { --sh: calc(100svh - var(--band) - 24px); width: calc(var(--sh) * 940 / 1550); align-self: start; margin-right: clamp(84px, 11vw, 120px); }
+  .pin { white-space: nowrap; width: auto; }
   .mbar { display: none; }
   .foot { padding-bottom: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   html { scroll-behavior: auto; }
+  .play__pause { display: none; }                               /* (nothing plays by itself: the steps wait for a click) */
   .backers__run { flex-wrap: wrap; justify-content: center; mask-image: none; -webkit-mask-image: none; }
   .backers__track { flex: 1 1 100%; min-width: 0; flex-wrap: wrap; justify-content: center; row-gap: 12px; padding: 0 16px; }
 }

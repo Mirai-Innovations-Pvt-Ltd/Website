@@ -1,103 +1,108 @@
-/* Layer website prototype: the opening (layer is written on, the lockup flies to the band), the hero (the 3D station
-   turns to face you, its glass showing the kiosk's own S5, the push into its screen, then a liquid-chrome try-on), How it
-   works (the kiosk's real screens and its real beats between them, S5 and its ending recorded from the kiosk build), one
-   living flow of liquid metal behind the translucent page, the stitched threads, the header, the pager that lands every
-   scene, and the pilot sheet. three.js (bundled) for the station; nothing else. */
+/* Layer website prototype: the hero (the 3D station turns to face you, its glass showing the kiosk's own S5, the push
+   into its screen, then a liquid-chrome try-on), How it works (the kiosk's real screens and its real beats between them,
+   playing themselves on their own clock; a click jumps a step), one living flow of liquid metal behind the translucent
+   page, the stitched threads, the header, the pager that lands every scene, and the pilot sheet. No opening: the page is
+   in at once. three.js (bundled) for the station; nothing else. */
 (() => {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const lerp = (a, b, t) => a + (b - a) * t;
-  const inout = (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  // linear with short eased ends (12% each): the hero's camera follows the scroll at one even rate, with no in-out of
+  // its own stacked on the page's motion (peak slope 1.14, where the in-out cubic it replaces peaked at 3)
+  const lin = (t) => { t = clamp(t, 0, 1); const e = .12, k = 2 * e * (1 - e); return t < e ? t * t / k : t > 1 - e ? 1 - (1 - t) * (1 - t) / k : (t - e / 2) / (1 - e); };
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const pagerOn = matchMedia('(min-width: 861px) and (min-height: 700px) and (pointer: fine)');
-  let autoScroll = false, gliding = false, glideId = 0, glideTarget = 0;   // set while the page glides itself
+  // the pager: on a desktop with a mouse, each wheel notch or paging key lands the next beat, at any window height (a
+  // scene taller than the window gets a second stop at its bottom). Trackpads, touch screens and phones scroll natively
+  const pagerOn = matchMedia('(min-width: 861px) and (pointer: fine)');
   const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
-  // every in-page move goes through one glide, so it lands exactly where the pager would
-  function glideTo(target) {
-    if (typeof stopAuto === 'function') stopAuto();
-    const y0 = scrollY, d = target - y0;
-    if (Math.abs(d) < 2) return;
-    autoScroll = true; glideTarget = target;
-    if (reduced) { scrollTo({ top: target, behavior: 'instant' }); return; }
-    gliding = true;
-    const id = ++glideId, root = document.documentElement, dur = Math.min(1150, 620 + Math.abs(d) * .26), t0 = performance.now();
-    root.style.scrollBehavior = 'auto';
-    const f = (now) => {
-      if (id !== glideId) return;                               // stopped, or a newer glide took over
-      const k = clamp((now - t0) / dur, 0, 1);
-      scrollTo(0, y0 + d * inout(k));
-      if (k < 1) requestAnimationFrame(f);
-      else { gliding = false; root.style.scrollBehavior = ''; setTimeout(() => { autoScroll = false; }, 80); }
-    };
-    requestAnimationFrame(f);
+  /* ONE SCROLL WRITER: every scroll the page makes itself goes through setY, instantly, and says why. A move the reader
+     asked for (a notch, a key, a link, a landing) is theirs ('glide'); a history or resize jump ('hash') is not: the band
+     and the threads read only the reader's own scrolling (`userDy`) */
+  let progSum = 0;
+  const setY = (y, why = 'glide') => {
+    const y0 = scrollY;
+    window.__layerWhy = why;                                     // (read by the review tools; a string, nothing more)
+    scrollTo({ top: y, behavior: 'instant' });
+    window.__layerWhy = '';
+    if (why !== 'glide') progSum += scrollY - y0;
+  };
+  const mover = () => ({ y: scrollY, p: progSum });
+  const userDy = (r) => { const d = scrollY - r.y - (progSum - r.p); r.y = scrollY; r.p = progSum; return d; };
+  /* ONE FOLLOWER: every move the page makes (a notch, a key, a link, a landing) aims at a target and one critically
+     damped spring follows it. It moves on the next frame, keeps its speed through every new target (another notch bends
+     the motion, never brakes it), turns back at once, and lets go the moment anything else moves the page (the
+     scrollbar, find, a touch, a trackpad). `lim` caps its speed by where the page is (the hero's push) */
+  // (pend: notches waiting their turn past the two-beat cap; ps: the beats they step through)
+  const FW = { on: false, py: 0, pv: 0, tgt: 0, w: 13, at: 0, wrote: 0, why: 'glide', lim: null, raf: 0, first: false, anchor: false, adopt: 0, pend: 0, ps: null, firstDt: 1 / 60 };
+  const maxY = () => Math.max(0, document.documentElement.scrollHeight - innerHeight);
+  function aim(y, o = {}) {
+    y = clamp(Math.round(y), 0, maxY());
+    // a turn (the new target behind the way it is going) starts back at once: its speed the old way is dropped, and it
+    // sets off the new way on the next frame (a new target the same way keeps its speed: it bends, never brakes)
+    let kick = false;
+    let turn = false;
+    if (FW.on && FW.pv && Math.sign(y - FW.py) !== Math.sign(FW.pv)) { FW.pv = .25 * (o.w || 13) * (y - FW.py); FW.first = true; kick = true; turn = true; }
+    FW.why = o.why || 'glide'; FW.lim = o.lim || null; FW.w = o.w || 13; FW.anchor = !!o.anchor; FW.tgt = y;
+    FW.adopt = o.anchor ? performance.now() + 600 : 0;
+    if (reduced) { stopFollow(); if (Math.abs(scrollY - y) > .5) setY(y, FW.why); return; }
+    if (!FW.on) {
+      if (Math.abs(scrollY - y) < .5) return;
+      FW.on = true; FW.py = scrollY; FW.pv = 0; FW.wrote = scrollY; FW.first = true; FW.raf = requestAnimationFrame(follow); kick = true;
+    }
+    // a move the reader asked for (a notch, a key, a turn) takes its first step in this very event, a frame sooner than
+    // the next frame's callback would (the page's own moves start from a frame callback anyway)
+    // (a turn's first step is a token 3 ms of the move: it turns the page now, at speed, and the next frame carries on
+    // from it, so a frame never holds two full steps of a fast turn: no zoom spike in the hero's push, however the frames
+    // happen to fall. A start from rest takes a whole frame's step: it is slow, so it can't double up)
+    if (kick && FW.why === 'glide') { cancelAnimationFrame(FW.raf); FW.firstDt = turn ? .003 : 1 / 60; follow(performance.now()); }
   }
-  function stopGlide() { if (!gliding) return; glideId++; gliding = false; autoScroll = false; document.documentElement.style.scrollBehavior = ''; }
-  const go = (top) => (pagerOn.matches ? glideTo(top) : scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' }));
+  function stopFollow() { FW.pend = 0; if (!FW.on) return; FW.on = false; FW.pv = 0; FW.anchor = false; cancelAnimationFrame(FW.raf); }
+  const nearest = (ps, y) => { let k = 0; for (let j = 1; j < ps.length; j++) if (Math.abs(ps[j] - y) < Math.abs(ps[k] - y)) k = j; return k; };
+  function follow(now) {
+    if (!FW.on) return;
+    if (Math.abs(scrollY - FW.wrote) > 2) {
+      // something else moved the page: it is theirs now. Only a link's move, in its first 600 ms, carries on from where the
+      // page went (a trackpad's momentum or a smooth wheel step still running from before the click)
+      if (now > FW.adopt) { stopFollow(); return; }
+      FW.py = scrollY;
+    }
+    const dt = Math.min(.05, FW.first ? FW.firstDt : Math.max(.001, (now - FW.at) / 1000));   // capped: a tab coming back never jumps
+    FW.firstDt = 1 / 60;
+    FW.first = false; FW.at = now;
+    const w = FW.w, x = FW.py - FW.tgt, e = Math.exp(-w * dt), j = (FW.pv + w * x) * dt;
+    let py = FW.tgt + (x + j) * e, pv = (FW.pv - w * j) * e;
+    // (read where it is and where this step would take it: a fast move never crosses into a speed-limited stretch at speed)
+    const lim = FW.lim ? Math.min(FW.lim(FW.py, FW.tgt), FW.lim(py, FW.tgt)) : Infinity;
+    if (Math.abs(pv) > lim) { pv = Math.sign(pv) * lim; py = FW.py + pv * dt; if ((FW.tgt - py) * (FW.tgt - FW.py) < 0) py = FW.tgt; }
+    let done = Math.abs(py - FW.tgt) < .5 && Math.abs(pv) < 8;
+    FW.py = py; FW.pv = pv;
+    // a queued notch takes its turn once the page is within two beats of where it would go: the target moves on, the
+    // speed carries (no stop at the beat in between)
+    if (FW.pend && FW.ps) {
+      const d = Math.sign(FW.pend), ps = FW.ps, ti = nearest(ps, FW.tgt);
+      if ((ti - nearest(ps, py)) * d < 2 && ps[ti + d] !== undefined) { FW.pend -= d; FW.tgt = ps[ti + d]; done = false; }
+      else if (ps[ti + d] === undefined) FW.pend = 0;
+    }
+    setY(done ? FW.tgt : py, FW.why); FW.wrote = scrollY;
+    if (done) { FW.on = false; FW.anchor = false; }
+    if (FW.on) FW.raf = requestAnimationFrame(follow);
+    // what the scroll drives is drawn from this write, in this frame (the loops that ran earlier in the frame skip it while
+    // the follower moves), so the camera never trails the page by a frame
+    if (heroOn) layoutHero(now);
+  }
+  const go = (top) => aim(top, { lim: (y) => heroLim(y) });
 
-  /* ───────────── OPENING: layer is written on, by Mirai arrives, and the lockup glides into its place on the band ───────────── */
-  const splash = $('#splash'), brand = $('.band__brand');
-  // the opening reports when it has landed. Everything heavy (the 3D station, the try-on, the close-up wall, the clip,
-  // the scenes below, the metal's shader) is set up while the written lockup holds still, before it flies: a still frame
-  // can't stutter, and nothing heavy is left for the landing or the first scroll. `setup` says when that may start,
-  // `prepped` when it is done (the flight waits for it, 1.2 s at most). Until the flight the hero sits
-  // under the opaque splash (veiled), so it isn't drawn
-  let landed, playing = false, veiled = true, startSetup, setupDone;
-  // a slow line (or Save-Data) never holds the lockup: there the setup runs after the landing, as its files arrive
-  const conn = navigator.connection, slowLine = !!conn && (!!conn.saveData || /2g|3g/.test(conn.effectiveType || ''));
-  const opened = new Promise((ok) => { landed = ok; });
+  /* ───────────── START: no opening. The page is in at once, the band's lockup in its place, the hero showing the
+     station's still until the live one is up. Everything heavy (the 3D station, the try-on, the close-up wall, the clip,
+     the scenes below, the metal's shader) is set up from the first frames on: `setup` says it may start, `prepped` that
+     it is done ───────────── */
+  let startSetup, setupDone;
+  const veiled = false;
+  const opened = Promise.resolve();
   const setup = new Promise((ok) => { startSetup = ok; });
   const prepped = new Promise((ok) => { setupDone = ok; });
-  (function opening() {
-    if (!splash) { veiled = false; startSetup(); return landed(); }
-    // every fresh visit gets it; coming back from the legal pages, or with reduced motion, goes straight in
-    if (reduced || /\/(privacy|terms)(\.html)?$/.test(document.referrer ? new URL(document.referrer).pathname : '')) { splash.remove(); veiled = false; startSetup(); return landed(); }
-    const root = document.documentElement, art = $('.splash__art', splash), mirai = $('.splash__mirai', splash);
-    const pin = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? new URLSearchParams(location.search).get('splash') : null;   // ?splash=1.2 holds the opening at 1.2 s, for review (local only)
-    if (pin !== null) {
-      root.classList.add('splashing'); splash.classList.add('go');
-      requestAnimationFrame(() => requestAnimationFrame(() => document.getAnimations().forEach((an) => { if (splash.contains(an.effect && an.effect.target)) { an.pause(); an.currentTime = +pin * 1000; } })));
-      return;
-    }
-    // the script ran so late (a very slow line) that the dark screen has stepped aside by itself: no opening
-    if (performance.now() > 5500) { splash.remove(); veiled = false; startSetup(); return landed(); }
-    root.classList.add('splashing');
-    let flown = false, t = 0;
-    function fly(quick) {
-      if (flown) return; flown = true; veiled = false; wake();
-      if (quick) splash.classList.add('done');
-      // the opening is the band's own lockup drawn large, so it lands by moving and scaling alone
-      const A = art.getBoundingClientRect(), B = brand.getBoundingClientRect(), k = B.width / A.width;
-      const D = [B.left - A.left, B.top + (B.height - A.height * k) / 2 - A.top];
-      const dur = quick ? 520 : 800;
-      art.animate([{ transform: 'none' }, { transform: `translate(${D[0]}px, ${D[1]}px) scale(${k})` }], { duration: dur, easing: 'cubic-bezier(.7, 0, .2, 1)', fill: 'forwards' });
-      splash.animate([{ backgroundColor: 'rgba(8, 7, 10, 1)' }, { backgroundColor: 'rgba(8, 7, 10, 0)' }], { duration: dur * .7, delay: dur * .25, easing: 'ease-out', fill: 'forwards' });
-      setTimeout(() => {
-        root.classList.remove('splashing'); playing = false; startSetup(); landed();
-        splash.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }).onfinish = () => splash.remove();
-      }, dur);
-    }
-    // it starts as soon as BY's face and Mirai are in (half a second at most) and the browser's first heavy frames are
-    // behind it (three smooth frames in a row, under a second at most), so nothing in it arrives late or stutters. The
-    // lockup is fully written by 1.75 s; the setup runs from there while it holds still, and it flies once that is done
-    const ready = Promise.all([document.fonts.load('600 20px "IBM Plex Mono"').catch(() => {}), mirai.decode().catch(() => {})]);
-    const steady = () => new Promise((ok) => {
-      const t0 = performance.now(); let last = 0, calm = 0;
-      const f = (now) => { calm = last && now - last < 40 ? calm + 1 : 0; last = now; if (calm >= 3 || now - t0 > 900) ok(); else requestAnimationFrame(f); };
-      requestAnimationFrame(f);
-    });
-    Promise.race([ready, wait(500)]).then(steady).then(() => {
-      if (flown) return;
-      playing = true; splash.classList.add('go');
-      // it holds only if everything the setup needs has downloaded by then: the hold waits on work, never on the network
-      // (otherwise the setup runs once the opening has landed, as its files arrive)
-      let hold = false;
-      setTimeout(() => { hold = !slowLine && inputsIn(); if (hold) startSetup(); }, 1750);
-      t = setTimeout(() => Promise.race([prepped, wait(hold ? 1200 : 0)]).then(() => fly(false)), 1950);
-    });
-    const skip = () => { clearTimeout(t); fly(true); };
-    ['pointerdown', 'wheel', 'keydown', 'touchstart'].forEach((ev) => addEventListener(ev, skip, { once: true, passive: true }));
-  })();
+  startSetup();
 
   // shared state (the hero, how it works and the metal all read it)
   let heroP = 0, heroA = 0, heroOn = true, heroScale = 1, phase = '', howAt = -1, yawKick = 0;
@@ -120,7 +125,7 @@
   const RIG = { x: .5777, y: .228, w: .1194, h: .7191 };       // the fallback still of the 3D station in hero-plate.jpg
   let SCREEN = { x: .6014, y: .2333, w: .0701, h: .2216 };     // its screen in the plate (the live model measures its own)
   const TURN = -28;                                             // degrees the station starts turned away
-  let station = null, scrW = 0, scrH = 0, s5tex = null, s5at = -1, swayFrom = 0;
+  let station = null, scrW = 0, scrH = 0, s5tex = null, s5at = -1, swayFrom = 0, swayOn = true;
   // until the live station is up, its still stands in: the same model at the same opening pose (hero-station.webp), so
   // the whole kiosk is in the hall from the first frame. flatOn: the square-on still has taken over instead (no WebGL,
   // or the push began before the live station was up)
@@ -153,13 +158,14 @@
   }
   // the stage's own width: the page without its scrollbar (innerWidth counts the bar, and the 3D frame would then sit a
   // few px off the canvas it is shown in, which on a square-on screen shows as a thick bezel on one side, none on the
-  // other). Read from the body: while the opening holds the page (overflow hidden) the root's clientWidth counts the
-  // scrollbar's kept gutter as page, and a station built then is squeezed into a narrower canvas, its screen off its glass
+  // other). Read from the body: the root's clientWidth can count the scrollbar's kept gutter as page, and a station built
+  // then is squeezed into a narrower canvas, its screen off its glass
   const pageW = () => document.body.clientWidth;
   let sizedW = 0;                                              // the width the station and its screen were last built for
   function sizeScreen() {                                        // the screen element is its own close-up size
     quadDirty = true;
-    const vw = pageW(), vh = innerHeight, narrow = vw < 861, band = narrow ? 58 : 68, foot = narrow ? 76 : 0;
+    if (!M.vw) measure();
+    const vw = pageW(), vh = M.heroStage || innerHeight, narrow = vw < 861, band = narrow ? 58 : 68, foot = narrow ? 76 : 0;
     const aspect = (SCREEN.w * 1536) / (SCREEN.h * 864);
     let h = (vh - band - foot) * .9, w = h * aspect;
     if (w > vw * .94) { w = vw * .94; h = w / aspect; }
@@ -167,20 +173,28 @@
   }
   // the page's fixed geometry, read once per resize: the scroll path then reads nothing from layout, so no frame of
   // the push ever waits on a forced style or layout pass
-  const M = { vw: 0, vh: 0, heroTop: 0, heroH: 0, sw: 0, sh: 0, howTop: 0, howH: 0 };
+  // (the pinned stages are 100svh: a phone's toolbar coming or going changes innerHeight but not them, so the hero and How
+  // are measured against their stages, and a toolbar never moves the camera or the film)
+  const M = { vw: 0, vh: 0, heroTop: 0, heroH: 0, sw: 0, sh: 0, howTop: 0, howH: 0, heroStage: 0, howStage: 0 };
+  // act one's share of the hero's scroll (the turn and the push). A phone's hero is longer (360vh, style.css) and its act
+  // one a larger share of it, so one ordinary swipe covers a third to a half of the push rather than all of it; the
+  // camera stays a pure function of the scroll. The try-on's beats (act two) follow it
+  const phoneHero = matchMedia('(max-width: 860px)');          // (the same test as style.css's 360vh hero)
+  const act = () => (phoneHero.matches ? .6 : .42);
   function measure() {
     M.vw = pageW(); M.vh = innerHeight;
+    M.heroStage = $('.hero__stage').offsetHeight || innerHeight;
     M.heroTop = hero.getBoundingClientRect().top + scrollY; M.heroH = hero.offsetHeight;
     M.sw = scene.offsetWidth; M.sh = scene.offsetHeight;
-    const hr = $('#how').getBoundingClientRect(); M.howTop = hr.top + scrollY; M.howH = hr.height;
+    heroMid.style.setProperty('--at', act());                  // (the hero's middle mark: where act one ends)
   }
-  const cue = $('.hero__cue'), say = $('.hero__say'), stageEl = $('.hero__stage');
+  const cue = $('.hero__cue'), say = $('.hero__say'), stageEl = $('.hero__stage'), heroMid = $$('.snap', hero)[1];
   let cueO = '', sayO = '', stageO = '', quadDirty = true;                             // the live screen needs placing (new station, new size)
   function layoutHero(now = performance.now()) {
     if (!M.vw) measure();
-    const vw = M.vw, vh = M.vh;
+    const vw = M.vw, vh = M.heroStage;
     const p = clamp((scrollY - M.heroTop) / (M.heroH - vh), 0, 1);
-    const a = clamp(p / .42, 0, 1);                            // act one: the turn and the push; act two (p > .42) is the try-on
+    const a = clamp(p / act(), 0, 1);                          // act one: the turn and the push; act two (p > ACT) is the try-on
     const sw = M.sw, sh = M.sh, narrow = vw < 861;
     const scx = (SCREEN.x + SCREEN.w / 2) * sw, scy = (SCREEN.y + SCREEN.h / 2) * sh;
     // CLOSE: the whole screen in view below the band (on a phone, above the quick-action bar too)
@@ -190,8 +204,9 @@
     // untouched at the top, the camera leans in toward the station now and then (about 8%) and settles back: a preview
     // of what the scroll does. It stops for good at the first scroll
     const hk = !reduced && !lite && p < .001 && now > hintFrom ? Math.pow(Math.sin(Math.PI * Math.min(1, ((now - hintFrom) % 7000) / 1900)), 2) : 0;
-    const pan = Math.max(reduced ? (a < .5 ? 0 : 1) : inout(clamp(a / .8, 0, 1)), hk * .22);
-    const push = Math.max(reduced ? pan : inout(clamp((a - .08) / .92, 0, 1)), hk * Math.log(1.08) / Math.log(Math.max(1.1, sC)));
+    // one ease only (lin): the page's own motion is the curve, so a notch's push is one steady move, never a lurch
+    const pan = Math.max(reduced ? (a < .5 ? 0 : 1) : lin(a / .8), hk * .22);
+    const push = Math.max(reduced ? pan : lin((a - .08) / .92), hk * Math.log(1.08) / Math.log(Math.max(1.1, sC)));
     const s = Math.pow(sC, push);                              // the wide shot is scale 1; zoom in log space, so it feels even
     const fx = lerp(narrow ? (RIG.x + RIG.w / 2) * sw : sw / 2, scx, pan), fy = lerp(sh / 2, scy, pan);
     let x = vw / 2 - fx * s, y = lerp(vh / 2, band + (vh - band - foot) / 2, pan) - fy * s;
@@ -200,12 +215,14 @@
     // close in, the wall behind the screen is the clean, soft rebuild of the plate (a real lens would lose it to focus too)
     const nearO = Math.max(nearFloor, clamp((s - 1.3) / 1.4, 0, 1)).toFixed(3);
     if (nearO !== heroNear.style.opacity) heroNear.style.opacity = nearO;
-    // the turn, with a slow breath while it waits; it lands square before the push gets close
+    // the turn, with a slow breath while it waits for the first scroll (it fades within the first bit of scroll and never
+    // comes back: once the reader drives, nothing turns by itself); it lands square before the push gets close
     const tA = reduced ? pan : clamp(a / .6, 0, 1);
-    const sway = reduced || lite ? 0 : Math.sin((now - swayFrom) / 2400) * 1.6 * (1 - tA);
-    const turn = TURN * (1 - inout(tA)) + sway;
+    if (a > .02) swayOn = false;
+    const sway = reduced || lite || !swayOn ? 0 : Math.sin((now - swayFrom) / 2400) * 1.6 * (1 - clamp(a / .02, 0, 1));
+    const turn = TURN * (1 - lin(tA)) + sway;
     // and the eye steps up and across to the screen's centre as the push closes in, so the close-up is dead square on
-    const eye = reduced ? pan : inout(clamp((a - .15) / .6, 0, 1));
+    const eye = reduced ? pan : lin((a - .15) / .6);
     if (station) {
       const k = (sw / 1536) * s;                               // CSS px per plate px: the 3D camera crops the same frame
       station.setView(1536, 864, -x / k, -y / k, vw / k, vh / k);
@@ -231,15 +248,22 @@
     if (fo !== stageO) { stageO = fo; stageEl.style.opacity = fo; }
     heroP = p; heroA = a; heroScale = s;
   }
+  // the follower's speed cap through the hero's push: the camera zooms at most ~5.3% per 60 Hz frame (ln zoom per px of
+  // scroll is ln(sC) x 1.14 / (.92 x the push's scroll)), so a notch's push is one even move, never a lurch
+  function heroLim(y) {
+    if (!M.heroH || y < M.heroTop - 2 || y > M.heroTop + (act() + .01) * (M.heroH - M.heroStage)) return Infinity;
+    const sC = scrH / Math.max(1, M.sh * SCREEN.h);
+    return 2.6 * act() * (M.heroH - M.heroStage) / Math.log(Math.max(1.5, sC));
+  }
+  const capped = (lim) => (y, t) => Math.min(heroLim(y), lim ? lim(y, t) : Infinity);
   function showFlat() { flatOn = true; kioskFlat.hidden = false; heroStill.hidden = true; }
   function flatStation(err) { console.warn('Layer Station: 3D unavailable, showing the still', err); window.__stationErr = String(err); showFlat(); c3d.remove(); hero.classList.remove('is-3d'); s5tex = null; }
   // one classic script (three.js bundled in), loaded from the page's own folder: no module loading for a host to break
-  // the setup's files: the station's script and the try-on's four photos (inputsIn: all of them are in)
+  // the setup's files: the station's script and the try-on's four photos
   let inputs = 0;
-  const inputsIn = () => inputs >= 5;
   const loadStation = () => new Promise((ok, no) => {
     if (window.LayerStation) { inputs++; return ok(window.LayerStation); }
-    const s = document.createElement('script'); s.src = 'assets/station/station.bundle.js?v=116'; s.async = true;
+    const s = document.createElement('script'); s.src = 'assets/station/station.bundle.js?v=118'; s.async = true;
     s.onload = () => { inputs++; return window.LayerStation ? ok(window.LayerStation) : no(new Error('station script loaded empty')); };
     s.onerror = () => no(new Error('station script failed to load')); document.head.appendChild(s);
   });
@@ -262,8 +286,8 @@
   // first real appearance in the push needs no rasterising (a first draw of a picture this size is a visible hitch on a
   // laptop's graphics)
   setup.then(() => { heroNear.src = heroNear.dataset.src; return heroNear.decode().then(() => { nearFloor = .002; }, () => {}); });
-  // the setup's pictures download from the first paint on (quietly, after everything the page needs), so they are in by
-  // the time the lockup is written; the setup itself only waits on work, never on the network
+  // the setup's pictures download from the first paint on (quietly, after everything the page needs); the setup itself
+  // only waits on work, never on the network
   requestAnimationFrame(() => setTimeout(() => {
     const i = new Image(); i.fetchPriority = 'low'; i.src = heroNear.dataset.src;
     ['00', '01', '02', '03'].forEach((n) => { const p = new Image(); p.fetchPriority = 'low'; p.onload = p.onerror = () => { inputs++; }; p.src = `assets/img/pose-${n}.webp`; });
@@ -277,11 +301,11 @@
     if (!type || type === '4g') { s5vid.addEventListener('canplay', ok, { once: true }); setTimeout(ok, 1500); clip(); }
     else { opened.then(() => { addEventListener('scroll', clip, { passive: true }); setTimeout(clip, 3000); }); ok(); }
   }));
-  // a link straight to a section (/#contact): the browser jumps before the page has its full height (the opening holds
-  // the scroll), so it lands short; once the opening is done, land it on the section itself
+  // a link straight to a section (/#contact): the browser jumps before the page has its full height, so it lands short;
+  // land it on the section itself
   opened.then(() => {
     const t = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
-    if (t && t.id !== 'hero') requestAnimationFrame(() => { const root = document.documentElement, b = root.style.scrollBehavior; root.style.scrollBehavior = 'auto'; scrollTo(0, t.getBoundingClientRect().top + scrollY); root.style.scrollBehavior = b; });
+    if (t && t.id !== 'hero') requestAnimationFrame(() => setY(t.getBoundingClientRect().top + scrollY, 'hash'));
   });
   sizeScreen(); layoutHero();
   // the GPU time of a frame of the station, where the browser can time GPU work (0 where it can't): the fastest of n,
@@ -300,14 +324,11 @@
     qs.forEach((q) => gl.deleteQuery(q));
     return ms.length ? Math.min(...ms) : 0;
   }
-  // until the 3D station is up (or without WebGL) its still stands in. It is built the moment its script is in: on the
-  // dark screen before the lockup is written (its one blocking step, the lighting, lands on a frame nobody watches), or,
-  // if the writing has begun, in the hold after it. Its shaders then compile in the background, and its first draw
-  // waits for the hold. On a slow line, whenever its script arrives
+  // until the 3D station is up (or without WebGL) its still stands in. It is built the moment its script is in, after
+  // the first paint; its shaders then compile in the background. On a slow line, whenever its script arrives
   const painted = new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
   const stationReady = loadStation().then(async ({ createStation }) => {
     await painted;
-    if (playing) await setup;
     try {
       const st = createStation(c3d, {});
       const w0 = pageW(), d0 = stationDpr();
@@ -317,8 +338,7 @@
       const q = st.screenQuad();
       const W = pageW(); SCREEN = { x: q[0][0] / W, y: q[0][1] / innerHeight, w: (q[1][0] - q[0][0]) / W, h: (q[3][1] - q[0][1]) / innerHeight };
       const tex = screenTexture(st); st.setScreen(tex);
-      // its shaders build in the background where the browser can, then one hidden draw (in the hold), so its first
-      // frame never stalls
+      // its shaders build in the background where the browser can, then one hidden draw, so its first frame never stalls
       await st.prepare(() => setup);
       // the page may have changed width, or gone lite, while it was built
       if (pageW() !== w0 || stationDpr() !== d0) st.size(pageW(), innerHeight, stationDpr());
@@ -335,7 +355,7 @@
 
   /* ───────────── HERO SCREEN: S5 at rest → the shopper → chrome pours down → the look ───────────── */
   const screen = heroScreen, canvas = $('#wipe'), s5 = $('#s5scr');
-  s5.style.transition = 'opacity .7s';
+  s5.style.transition = 'opacity .25s';
   const kui = $('.kui', screen), kuiTitle = $('#kuiTitle'), kuiTag = $('#kuiTag'), putOn = $('#putOn'), putWord = $('#putOn b');
   const gl = canvas.getContext('webgl', { premultipliedAlpha: false, antialias: true });
   const VS = `attribute vec2 p; varying vec2 v; void main(){ v = p * .5 + .5; v.y = 1. - v.y; gl_Position = vec4(p, 0., 1.); }`;
@@ -406,7 +426,7 @@
   // the pour: the edge runs fast past the head and shoulders, then follows the scroll down the body
   const START = -0.2, CLEAR = .27, END = 1.35;
   const pourAt = (k) => (k < .06 ? START + (CLEAR - START) * (k / .06) : CLEAR + (END - CLEAR) * ((k - .06) / .94));
-  let wipeT = START, wipeTo = START, t0 = performance.now(), looks = [], look = 1, raf = 0, dirty = true, ready = false;
+  let wipeT = START, wipeTo = START, wipeAt = 0, t0 = performance.now(), looks = [], look = 1, raf = 0, dirty = true, ready = false;
   function size() {
     const k = Math.min(Math.min(devicePixelRatio, 2), 1200 / Math.max(1, canvas.offsetHeight));   // the screen is drawn at its close-up size
     const w = Math.max(2, Math.round(canvas.offsetWidth * k)), h = Math.max(2, Math.round(canvas.offsetHeight * k));
@@ -416,8 +436,12 @@
   function draw(now) {
     size();
     const moving = Math.abs(wipeTo - wipeT) > .001 || (wipeT > -.15 && wipeT < 1.25);
-    if (!moving && !dirty) return;
-    wipeT += (wipeTo - wipeT) * (reduced ? 1 : .045);
+    if (!moving && !dirty) { wipeAt = 0; return; }
+    // the pour follows the scroll with an 80 ms lag at any frame rate (it used to move 4.5% a frame: a second behind at
+    // 60 fps, two at 30), and arrives
+    const dt = wipeAt ? Math.min(100, now - wipeAt) : 16; wipeAt = now;
+    wipeT += (wipeTo - wipeT) * (reduced ? 1 : 1 - Math.exp(-dt / 80));
+    if (Math.abs(wipeTo - wipeT) < .01) wipeT = wipeTo;
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.uniform1f(uni.uT, wipeT); gl.uniform1f(uni.uTime, reduced ? 2.4 : (now - t0) / 1000);
     gl.uniform1f(uni.uAsp, canvas.width / canvas.height); gl.uniform1f(uni.uImg, imgAsp);
@@ -438,13 +462,13 @@
   }
   // scroll is the director: S5 at rest while it turns and pushes in, then the try-on
   function direct() {
-    const want = ready && heroP >= .36 ? 'try' : 's5';
+    const A1 = act(), want = ready && heroP >= A1 - .06 ? 'try' : 's5';
     if (want !== phase) {
       phase = want; s5.style.opacity = phase === 's5' ? '1' : '0'; screen.classList.toggle('is-try', phase === 'try');
       showKui(phase === 'try'); dirty = true; playS5();
     }
     if (phase !== 'try') return;
-    wipeTo = pourAt(clamp((heroP - .5) / .4, 0, 1));
+    wipeTo = pourAt(clamp((heroP - (A1 + .08)) / (.82 - A1), 0, 1));   // (desktop: .5 to .9)
     const state = wipeT <= START + .01 && wipeTo <= START + .001 ? 'hold' : wipeT < 1.02 ? 'pour' : 'done';
     setText(kuiTitle, { hold: 'HOLD IT THERE.', pour: 'PUTTING IT ON…', done: 'THERE YOU ARE.' }[state]);
     setText(putWord, state === 'done' ? 'TRY ANOTHER' : 'TRY IT ON');
@@ -454,7 +478,7 @@
   function loop(now) {
     raf = 0;
     if (!heroOn) return;
-    if (heroA < 1 && !reduced && !veiled) layoutHero(now);    // keeps the waiting station breathing (once it can be seen)
+    if (heroA < 1 && !reduced && !veiled && !FW.on) layoutHero(now);    // keeps the waiting station breathing (once it can be seen)
     direct();
     if (texA && phase === 'try') draw(now);
     raf = requestAnimationFrame(loop);
@@ -471,7 +495,7 @@
   }
   async function director() {
     showKui(false); s5.style.opacity = '1';
-    // its shader compiles in the background from the first paint; the rest is set up in the hold, after the station
+    // its shader compiles in the background from the first paint; the rest is set up after the station
     const shader = painted.then(glInit);
     // (after the station when it is there; on a slow line the station's script may still be on its way, and the try-on
     // never waits more than a moment for it)
@@ -525,7 +549,7 @@
   new IntersectionObserver(([e]) => {
     clearInterval(poseTimer); clearTimeout(poseKick); poseTimer = 0;
     if (!e.isIntersecting) return;
-    if (!poseSeen) { poseSeen = true; spin(Math.PI); }
+    poseSeen = true;
     const next = () => { if (!document.hidden) poseNext(); };
     poseKick = setTimeout(() => { next(); poseTimer = setInterval(next, reduced ? 3600 : 2600); }, reduced ? 900 : 600);
   }, { threshold: .45 }).observe($('.pose__card'));
@@ -547,67 +571,62 @@
     lane.appendChild(copy);
   }
 
-  /* ───────────── HOW IT WORKS: the kiosk's real screens, pinned on the station's glass, with the kiosk's own beats ───────────── */
+  /* ───────────── HOW IT WORKS: the kiosk's real screens, on the station's glass, playing themselves; a click jumps ahead ───────────── */
   const how = $('#how'), howSteps = $$('.how__steps li'), device = $('#device'), howScreen = $('#howScreen');
-  const hsA = $('#hsA'), hsB = $('#hsB'), hsScrim = $('#hsScrim'), hsSheet = $('#hsSheet'), howS5 = $('#howS5'), hsHold = $('#hsHold'), hsEnd = $('#hsEnd'), hsTap = $('#hsTap'), hsFlash = $('#hsFlash');
-  // they download as How it works comes near (never with the first view, so a slow line spends itself on the hero).
-  // The ending is scrubbed by the scroll, so it is held whole in memory: a blob seeks anywhere at once, on any host
-  // (a server without range requests cannot seek a streamed clip)
-  const howMedia = () => {
-    hsHold.poster = hsHold.dataset.poster; hsHold.preload = 'auto';
-    fetch(hsEnd.currentSrc || hsEnd.src).then((r) => (r.ok ? r.blob() : Promise.reject(r.status)))
-      .then((blob) => { hsEnd.src = URL.createObjectURL(blob); hsEnd.preload = 'auto'; })
-      .catch(() => { hsEnd.preload = 'auto'; });
-  };
-  opened.then(() => new IntersectionObserver(([e], o) => { if (e.isIntersecting) { o.disconnect(); howMedia(); } }, { rootMargin: '150% 0px' }).observe(how));
+  const hsA = $('#hsA'), hsB = $('#hsB'), hsScrim = $('#hsScrim'), hsSheet = $('#hsSheet'), howS5 = $('#howS5'), howS5in = $('#howS5in'), hsHold = $('#hsHold'), hsHer = $('#hsHer'), hsTap = $('#hsTap'), hsFlash = $('#hsFlash');
   const SCR = (n) => `assets/screens/layer/${n}.webp`;
-  const SHOT = ['s0', 's2', 's4bottoms', 's5-hold', 's6'].map(SCR), TOPS = SCR('s4top');   // each step's resting screen
+  const SHOT = ['s0', 's2', 's4bottoms', 's5-hold', 's6'].map(SCR), TOPS = SCR('s4top'), HER = SCR('s5-her');   // each step's resting screen
   // where the shopper presses, in the kiosk's own 540 x 960 frame
   const PRESS = { s0: [190, 830], women: [146, 785], bottom: [394, 798], tryon: [325, 881], putiton: [240, 887] };
+  const RISE_FROM = 960;                                         // S5 rises from the screen's bottom edge, up past PUT IT ON ME
+  // her photo in S6's card: the full-bleed still (s5-her.webp) scaled about its top-left corner and moved, and the card's
+  // edges in the photo's own pixels (tools/make_s5_her.py: S .905, (26.48, 67.36), a median 1 grey level off S6's own
+  // photo; the card is x 27-514.5, y 68-718.5 in s6.webp)
+  const CARD = { s: .905, x: 26.48, y: 67.36, clip: [.71, .75, 240.5, .57] };
+  // the S5 ring's hole, in the same frame: the largest circle inside it (centre and radius, steady to a pixel across the
+  // hold loop's rock), and the radius that covers the whole screen from there
+  const HOLE = { x: 266, y: 472, r: 90, max: 566 };
   // the glass in device-frame.webp (900 x 1576), from the 3D model (tools/station_render.py)
   const GLASS = [[132.3, 40.4], [731.6, 28.1], [731.0, 1126.9], [132.9, 1119.3]];
   const placeHowScreen = () => { const k = device.offsetWidth / 900; howScreen.style.transform = homography(540, 960, GLASS.map(([x, y]) => [x * k, y * k])); };
   const SEQ = Array.from({ length: 15 }, (_, i) => SCR(`s0seq/${String(i).padStart(2, '0')}`));
-  const held = [];                                              // keep the preloaded frames alive
-  new IntersectionObserver(([e], o) => { if (e.isIntersecting) { [...SHOT, TOPS, ...SEQ, SCR('sheet-scrim'), SCR('sheet-panel')].forEach((src) => { const i = new Image(); i.src = src; i.decode().catch(() => {}); held.push(i); }); o.disconnect(); } }, { rootMargin: '100% 0px' }).observe(how);
-  /* the journey is one film and the scroll is its timeline. Each step owns a stretch of the section, as long as what it
-     shows (W): first the kiosk makes its move into it (the tap, the drop, the sheet, S5) at whatever speed you scroll,
-     forwards or back, then it rests there. Layer's ending is too long to scrub, so the scroll only cues it: it plays in
-     its own time (a little faster if you scroll on), and scrolling back above it fades back to S5. Leave it all alone
-     and it plays itself at the kiosk's pace, carrying the scroll with it so the two never disagree */
+  // every picture How shows is decoded before it is shown: a swap waits for its picture (the last one stays up meanwhile),
+  // so a slow line never paints a blank or half-drawn frame. They download, with the S5 loop, once How is two windows away
+  // (never with the first view, so a slow line spends itself on the hero first)
+  const decoded = new Set(), held = [];
+  const preload = (src) => { const i = new Image(); i.src = src; held.push(i); return i.decode().then(() => { decoded.add(src); }, () => {}); };
+  // the payoff's two stills (her photo and S6, 38 KB together) come a moment after the landing, so even a reader who
+  // flings straight through How on a slow line ends on her
+  opened.then(() => wait(1500)).then(() => { [HER, SHOT[4]].forEach(preload); });
+  opened.then(() => new IntersectionObserver(([e], o) => {
+    if (!e.isIntersecting) return;
+    o.disconnect();
+    // the story's stills first, the ending's two (her photo, S6) among them, then the attract frames; the S5 loop (the
+    // heaviest file) once the stills are in, so on a slow line the payoff never waits behind it
+    const key = [SHOT[0], SHOT[1], TOPS, SHOT[2], SHOT[3], HER, SHOT[4]];
+    const stills = Promise.all(key.map(preload)); SEQ.forEach(preload);
+    hsHer.src = HER;
+    Promise.race([stills, wait(4000)]).then(() => { hsHold.poster = hsHold.dataset.poster; hsHold.preload = 'auto'; });
+  }, { rootMargin: '200% 0px' }).observe(how));
+  /* the journey plays itself, one step after another, on its own clock while How it works is in view: each step's move
+     at the kiosk's own pace (the tap, the capture, the drop, the sheet, S5 rising from the key, her coming through the
+     ring into S6's card), then a rest to read it. After the last step it starts again from the top (the kiosk wipes the
+     session). The bar under the steps is that clock, one segment per step, filling as it plays; nothing in How follows
+     the scroll. A click on the screen or the forward key jumps to the next step at once, a step's name or its segment
+     jumps to that step, and the pause key holds it all */
   const N = howSteps.length;                                    // 5
-  const W = [24, 44, 66, 66, 70];                               // each step's share of the scroll, vh (the section is 370vh)
-  const MV = [0, .55, .6, .62, .22];                            // the part of it the move fills (the ending's: only its cue)
-  const BEAT = [.5, .78, .8, .82, .5];                          // where it rests: what a beat, a click and the pager land on
-  const TAIL = .8;                                              // the last fifth of the last step: the photo is wiped, S0 calls the next one
-  const CUM = W.reduce((a, w) => [...a, a[a.length - 1] + w], [0]), WT = CUM[N];
-  const DUR = [0, .75, 1.6, 2.05, 7.7];                         // each move at the kiosk's pace, s (the ending's is its clip)
-  const REST = [3, 2.2, 2.6, 3.4];                              // how long a step rests before it plays on by itself, s
-  const IDLE = 1200;                                            // ms without a touch before it plays by itself
-  const dur = (i) => (i === N - 1 && hsEnd.duration > 1 ? hsEnd.duration : DUR[i]);
-  const fAt = (p) => { const x = clamp(p, 0, 1) * WT; let i = 0; while (i < N - 1 && x >= CUM[i + 1]) i++; return i + clamp((x - CUM[i]) / W[i], 0, .9999); };
-  const pAt = (f) => { const i = clamp(Math.floor(f), 0, N - 1); return (CUM[i] + (f - i) * W[i]) / WT; };
-  const beat = (i) => i + BEAT[i];
-  $$('.snap', how).forEach((el, i) => el.style.setProperty('--at', pAt(beat(i)).toFixed(4)));
-  const eo = (t) => 1 - Math.pow(1 - t, 3), eq = (t) => 1 - Math.pow(1 - t, 4);
+  const DUR = [0, .75, 1.6, 2.05, 2.3];                         // each step's move at the kiosk's pace, s
+  const REST = [3.4, 2.6, 3, 3.6, 4.4];                         // then its rest, s (the first: S0's attract loop)
+  const span = (i) => DUR[i] + REST[i];
+  const eo = (t) => 1 - Math.pow(1 - t, 3), eq = (t) => 1 - Math.pow(1 - t, 4), eio = (t) => (t < .5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t));
   const win = (tau, t0, d) => clamp((tau - t0) / d, 0, 1);
-  let touchedAt = 0, auto = null, restAt = 0, restOn = -1, howRaf = 0, howNear = false, attractAt = 0;
-  // the mouse wheel is the pager's (it decides what a notch does to a playing move); everything else stops the film
-  const touched = () => { touchedAt = performance.now(); if (auto) stopAuto(); };
-  ['touchstart', 'touchmove', 'keydown', 'pointerdown'].forEach((ev) => addEventListener(ev, touched, { passive: true }));
-  addEventListener('wheel', () => { if (!pagerOn.matches || window.__nosnap) touched(); }, { passive: true });
-  // a phone settles a beat after the finger lifts, not a second later
-  if (coarse) addEventListener('scrollend', () => { if (!auto && howNear) touchedAt = Math.min(touchedAt, performance.now() - IDLE + 300); });
-  // pointing at the steps, or a step in focus, holds the film where it is
-  let holdOn = false;
-  const stepList = $('.how__steps');
-  stepList.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') holdOn = true; });
-  stepList.addEventListener('pointerleave', () => { holdOn = false; });
-  stepList.addEventListener('focusin', () => { holdOn = true; });
-  stepList.addEventListener('focusout', () => { holdOn = false; });
+  // ci: the step in play; ct: how far into it, s; filmT: the film's own clock, ms (it stands still whenever the film does)
+  let ci = 0, ct = 0, filmT = 0, tickAt = 0, howRaf = 0, howNear = false, howIn = false, howPaused = false;
+  const running = () => !reduced && howIn && !howPaused && !document.hidden;
+  const rendering = () => (ci === 3 && ct >= DUR[3]) || (ci === 4 && ct < DUR[4]);   // S5 at rest, and her coming through it
   let srcA = '', srcB = '';
-  const setA = (s) => { if (s !== srcA) { srcA = s; hsA.src = s; } };
-  const setB = (s) => { if (s !== srcB) { srcB = s; hsB.src = s; } };
+  const setA = (s) => { if (s !== srcA && decoded.has(s)) { srcA = s; hsA.src = s; } };
+  const setB = (s) => { if (s !== srcB && decoded.has(s)) { srcB = s; hsB.src = s; } };
   // a press: where the shopper's finger lands (the kiosk's tap ring), drawn at any moment of the move
   function tapAt(tau, t0, [x, y]) {
     const t = (tau - t0) / .55;
@@ -619,45 +638,46 @@
   }
   const flashAt = (tau, t0) => { const t = (tau - t0) / .6; return t <= 0 || t >= 1 ? 0 : t < .12 ? .95 * t / .12 : .95 * (1 - eo((t - .12) / .88)); };
   // S0's attract loop: the bone plate melts into the figure and back, in its own time
-  function attractFrame(now) {
-    const t = (now - attractAt) % 5920;
+  function attractFrame(ft) {
+    const t = ft % 5920;
     const k = t < 960 ? Math.floor(t / 64) : t < 3560 ? 14 : t < 4520 ? 14 - Math.floor((t - 3560) / 64) : 0;
     return SEQ[clamp(k, 0, 14)];
   }
-  // the ending: a seek waits for the last one to land, so a fast scroll never queues them up
-  let endWant = 0, endMode = 'off', endRate = 1;               // off · play (in its own time) · done (on its last frame)
-  function seekEnd(t) { endWant = t; if (!hsEnd.seeking && Math.abs(hsEnd.currentTime - t) > .02) hsEnd.currentTime = t; }
-  hsEnd.addEventListener('seeked', () => { if (hsEnd.paused && Math.abs(hsEnd.currentTime - endWant) > .02) hsEnd.currentTime = endWant; });
-  hsEnd.addEventListener('ended', () => { if (endMode === 'play') endMode = 'done'; });
-  function startEnd(from) {
-    endMode = 'play'; seekEnd(from); endRate = 1; hsEnd.playbackRate = 1;
-    hsEnd.play().catch(() => { endMode = 'done'; seekEnd(Math.max(0, dur(N - 1) - .05)); });
-  }
-  function stopEnd() { if (endMode === 'off') return; endMode = 'off'; hsEnd.pause(); }
-  const sayPs = $$('.how__say p'), howCount = $('.how__count');
-  function paint(f, now) {
-    const i = clamp(Math.floor(f), 0, N - 1), l = f - i;
-    const u = i === 0 || reduced ? 1 : clamp(l / MV[i], 0, 1), tau = u * dur(i);
+  const sayPs = $$('.how__say p');
+  let holdAsk = false;
+  // the screen at any moment of step i's move (u: 0 to 1; 1 is the step at rest). ft: the film's clock, ms (S0's loop)
+  function paint(i, u, ft) {
+    const tau = u * DUR[i];
     if (i !== howAt) {
       howAt = i;
       howSteps.forEach((s, k) => { s.classList.toggle('on', k === i); $('button', s).setAttribute('aria-current', String(k === i)); });
       sayPs.forEach((p, k) => p.classList.toggle('on', k === i));
-      howCount.textContent = `0${i + 1} / 0${N}`;
     }
-    let a = SHOT[i], b = '', bo = 0, bt = '', scrim = 0, sheet = 0, sheetY = 0, s5 = 0, hold = 'still', holdO = 1, end = false, flash = 0, tap = false;
-    let fill = (i + u) / N, wipe = 0;
-    if (i < N - 1) stopEnd();
-    if (i === 0) a = reduced ? SHOT[0] : attractFrame(now);
-    else if (i === N - 1) {                                     // THERE YOU ARE: Layer's ending, cued by the scroll, then in its own time
-      wipe = reduced ? 0 : clamp((l - TAIL) / (1 - TAIL), 0, 1);
-      if (reduced) a = SHOT[4];
-      else {
-        if (endMode === 'off') { if (howUp) { endMode = 'done'; seekEnd(Math.max(0, dur(i) - .05)); } else startEnd(0); }
-        const ct = endMode === 'done' ? dur(i) : hsEnd.currentTime;
-        const rate = l > BEAT[i] + .04 || wipe > 0 ? 2.5 : 1;   // scrolled on past it: it hurries
-        if (endMode === 'play' && rate !== endRate) { endRate = rate; hsEnd.playbackRate = rate; }
-        a = wipe > 0 ? attractFrame(now) : SHOT[3]; s5 = 1 - wipe; end = true; holdO = 1 - win(ct, 0, .3);
-        fill = (i + clamp(ct / dur(i), 0, 1)) / N;
+    let a = SHOT[i], aO = 1, b = '', bo = 0, bt = '', scrim = 0, sheet = 0, sheetY = 0, flash = 0, tap = false;
+    let s5 = 0, rise = 0, s5k = 0, hold = 'still', her = 0, herS = 1, herX = 0, herY = 0, herC = 0, iris = -1;
+    if (i === 0) a = reduced ? SHOT[0] : attractFrame(ft);
+    else if (i === N - 1) {                                     // THERE YOU ARE
+      a = SHOT[4];
+      if (!reduced && u < 1) {
+        // she comes through the ring: her photo opens out of the ring's hole (first filling the hole, then an iris that
+        // grows over the ring and the page) while the ring swells toward you. Every pixel is S5 or her, never a blend of
+        // the two. Then her photo settles into S6's card while S6's frame, THERE YOU ARE and its keys come up around it;
+        // S6's own photo takes over under hers in the last tenth
+        const e1 = eo(clamp(u / .5, 0, 1)), e2 = eio(clamp((u - .55) / .45, 0, 1));
+        aO = u < .55 ? 0 : eo(clamp((u - .55) / .35, 0, 1));
+        rise = 1; s5k = .25 * e1;
+        // (S5 goes once the iris has covered all but the screen's far corners)
+        s5 = u < .42 ? 1 : 1 - clamp((u - .42) / .08, 0, 1);
+        her = u < .9 ? 1 : 1 - (u - .9) / .1;
+        if (u < .5) {
+          iris = u < .1 ? HOLE.r * eo(u / .1) : lerp(HOLE.r, HOLE.max, eio((u - .1) / .4));
+          herS = 1.04 - .04 * e1; herX = -HOLE.x * (herS - 1); herY = -HOLE.y * (herS - 1);
+        } else if (u >= .55) { herS = 1 - (1 - CARD.s) * e2; herX = CARD.x * e2; herY = CARD.y * e2; herC = e2; }
+      }
+      // a slow line, S6 not decoded yet: her photo holds its place in the card (on black) until S6 can take over
+      if (!reduced && u > .55 && !decoded.has(SHOT[4]) && hsHer.complete && hsHer.naturalWidth) {
+        const e2 = eio(clamp((u - .55) / .45, 0, 1));
+        her = 1; aO = 0; herS = 1 - (1 - CARD.s) * e2; herX = CARD.x * e2; herY = CARD.y * e2; herC = e2;
       }
     } else if (u < 1) {
       if (i === 1) {                                            // TOUCH TO START, then the capture
@@ -665,138 +685,116 @@
       } else if (i === 2) {                                     // WOMEN: the tops drop in from above; BOTTOM: the rail swaps to bottoms
         if (tau < .9) { tap = tapAt(tau, 0, PRESS.women); a = SHOT[1]; b = TOPS; const e = eq(win(tau, .3, .55)); bo = e; bt = `translateY(${(-35 * (1 - e)).toFixed(1)}px)`; }
         else { tap = tapAt(tau, .9, PRESS.bottom); a = TOPS; b = SHOT[2]; bo = eo(win(tau, 1.2, .32)); }
-      } else {                                                  // TRY IT ON: YOUR LOOK rises over S4; PUT IT ON ME: S5
+      } else {                                                  // TRY IT ON: YOUR LOOK rises over S4; PUT IT ON ME: S5 rises from the key
         tap = tau < 1.41 ? tapAt(tau, 0, PRESS.tryon) : tapAt(tau, 1.41, PRESS.putiton);
-        a = tau < 1.97 ? SHOT[2] : SHOT[3];
-        scrim = tau < 1.97 ? eo(win(tau, .26, .2)) : 0;
-        const e = eq(win(tau, .26, .3)); sheet = tau < 1.97 ? e : 0; sheetY = 130 * (1 - e);
-        s5 = win(tau, 1.69, .28); hold = 'first';
+        rise = eo(win(tau, 1.55, .35));
+        a = rise < 1 ? SHOT[2] : SHOT[3];
+        scrim = rise < 1 ? eo(win(tau, .26, .2)) : 0;
+        const e = eq(win(tau, .26, .3)); sheet = rise < 1 ? e : 0; sheetY = 130 * (1 - e);
+        s5 = rise > 0 ? 1 : 0; hold = 'first';
       }
-    } else if (i === 3) { s5 = 1; hold = reduced ? 'still' : 'play'; }
+    } else if (i === 3) { s5 = 1; rise = 1; hold = reduced ? 'still' : 'play'; }
     if (!tap) hsTap.style.opacity = 0;
     hsFlash.style.opacity = flash;
+    // a hand-over from the overlay to the base layer waits for the base's picture to be decoded: until it is, the overlay
+    // goes on showing that picture (it never drops a frame early and lets the old base picture flash through)
+    if (a !== srcA && !decoded.has(a) && srcB === a) { b = a; bo = 1; bt = ''; }
     setA(a);
+    hsA.style.opacity = aO === 1 ? '' : aO.toFixed(3);
     if (b) setB(b);
     hsB.style.opacity = b ? bo : 0; hsB.style.transform = bt;
     hsScrim.style.opacity = scrim; hsSheet.style.opacity = sheet; hsSheet.style.transform = sheet ? `translateY(${sheetY.toFixed(1)}px)` : '';
-    howS5.style.opacity = s5; howS5.style.visibility = s5 > 0 ? 'visible' : 'hidden';
-    // the hold loops while S5 rests, waits on its first frame while S5 arrives, and fades as the ending begins
-    hsHold.style.opacity = holdO;
-    if (hold === 'play') { if (hsHold.paused && howNear) hsHold.play().catch(() => {}); }
-    else {
+    // S5 is revealed by an edge rising from the key (the frame moves up, its content counter-moves): every pixel is either
+    // the sheet or S5, never a blend of the two
+    const drop = (RISE_FROM * (1 - rise)).toFixed(1);
+    howS5.style.opacity = s5 > 0 && s5 < 1 ? s5.toFixed(3) : s5 > 0 ? '1' : '0';
+    howS5.style.visibility = s5 > 0 && rise > 0 ? 'visible' : 'hidden';
+    howS5.style.transform = rise < 1 ? `translateY(${drop}px)` : '';
+    howS5in.style.transform = rise < 1 ? `translateY(-${drop}px)` : s5k ? `scale(${(1 + s5k).toFixed(4)})` : '';
+    hsHer.style.opacity = her ? her.toFixed(3) : '0';
+    hsHer.style.visibility = her ? 'visible' : 'hidden';
+    hsHer.style.transform = her ? `translate(${herX.toFixed(2)}px, ${herY.toFixed(2)}px) scale(${herS.toFixed(4)})` : '';
+    hsHer.style.clipPath = iris >= 0 ? `circle(${iris.toFixed(1)}px at ${HOLE.x}px ${HOLE.y}px)` : herC ? `inset(${CARD.clip.map((c) => (c * herC).toFixed(2) + 'px').join(' ')})` : '';
+    // the loop plays while S5 rests (and the film plays); it waits where it is otherwise, and goes back to its first frame
+    // only while S5 is out of sight (so the reveal always starts on frame 0 and the ring never snaps)
+    if (hold === 'play' && running()) {
+      if (hsHold.paused && !holdAsk) { holdAsk = true; hsHold.play().catch(() => {}).finally(() => { holdAsk = false; }); }
+    } else {
       if (!hsHold.paused) hsHold.pause();
-      if (hold === 'first' && hsHold.currentTime > .05 && !hsHold.seeking) hsHold.currentTime = 0;
+      if (hold === 'first' && rise === 0 && hsHold.currentTime > .05 && !hsHold.seeking) hsHold.currentTime = 0;
     }
-    hsEnd.style.opacity = end ? 1 : 0;
-    if (!end && !hsEnd.paused) hsEnd.pause();
-    howFill = fill;
   }
-  // where each step's beat sits in the page, and the scroll that shows a point of the film
-  const yAt = (f) => M.howTop + (M.howH - innerHeight) * pAt(f);
-  function stopAuto() {
-    if (!auto) return;
-    auto = null; restOn = -1;
-    document.documentElement.style.scrollBehavior = ''; document.documentElement.style.scrollSnapType = '';
-  }
-  function playOn(i, tau, now) {                                // it plays move i from tau, at the kiosk's pace
-    auto = { i, tau, at: now, rate: 1 };
-    document.documentElement.style.scrollBehavior = 'auto'; document.documentElement.style.scrollSnapType = 'none';
-    if (i === N - 1 && endMode !== 'play') startEnd(tau);
-  }
-  // a second notch while a move plays: it finishes the move, quickly; a third: it is done, straight onto its beat
-  function hurry() {
-    if (!auto) return false;
-    const now = performance.now();
-    if (auto.rate > 1) {
-      const i = auto.i; stopAuto();
-      if (i === N - 1) { endMode = 'done'; hsEnd.pause(); seekEnd(Math.max(0, dur(i) - .05)); }
-      glideTo(Math.round(yAt(beat(i)))); return true;
+  /* THE BAR: one segment per step. The steps before are full, the one in play fills with its clock (its move and its
+     rest), the next one's track is lighter than the rest (where a click goes); the forward key at its end jumps there
+     now, and on the last step it reads as a replay. Written on change only */
+  const playEl = $('#howPlay'), segs = $$('.play__seg', playEl), nextKey = $('.play__next', playEl), pauseKey = $('.play__pause', playEl);
+  let segAt = -1, kWas = '';
+  function publish() {
+    if (ci !== segAt) {
+      segAt = ci;
+      segs.forEach((b, k) => {
+        b.classList.toggle('is-past', k < ci); b.classList.toggle('is-on', k === ci); b.classList.toggle('is-next', k === (ci + 1) % N);
+        if (k !== ci) b.style.setProperty('--k', k < ci ? 1 : 0);
+      });
+      const end = ci === N - 1;
+      nextKey.classList.toggle('is-end', end); nextKey.setAttribute('aria-label', end ? 'Start again' : 'Next step');
     }
-    auto.tau = Math.min(dur(auto.i), auto.tau + (now - auto.at) / 1000 * auto.rate); auto.at = now; auto.rate = 3;
-    if (auto.i === N - 1 && endMode === 'play') { endRate = 3; hsEnd.playbackRate = 3; }
-    return true;
+    const k = (reduced ? 1 : clamp(ct / span(ci), 0, 1)).toFixed(4);
+    if (k !== kWas) { kWas = k; segs[ci].style.setProperty('--k', k); }
   }
-  // a click on a step cuts to it, then plays its move: no racing through the steps between
-  function cutTo(k) {
-    stopGlide(); stopAuto(); stopEnd();
-    const r = document.documentElement; r.style.scrollBehavior = 'auto';
-    if (!reduced) howScreen.animate([{ opacity: .15 }, { opacity: 1 }], { duration: 320, easing: 'ease-out' });
-    scrollTo(0, Math.round(yAt(k === 0 || reduced ? beat(k) : k)));
-    r.style.scrollBehavior = '';
-    if (k > 0 && !reduced) playOn(k, 0, performance.now());
+  const howDraw = () => { paint(ci, DUR[ci] ? clamp(ct / DUR[ci], 0, 1) : 1, filmT); publish(); };
+  // to step k: its move plays from the start (paused, or with reduced motion, it shows the step at rest: nothing would
+  // play the move). Anything but the step after a finished move is a cut, so the screen dips for a moment and it reads
+  // as a jump, not as a beat of the kiosk's own
+  function jump(k) {
+    const was = ci, mid = ct < DUR[ci];
+    ci = ((k % N) + N) % N;
+    ct = reduced || howPaused ? DUR[ci] : 0;
+    if (ci === 0) filmT = 0;                                    // (S0's loop from its start)
+    if (!reduced && (ci !== was + 1 || mid)) howScreen.animate([{ opacity: .15 }, { opacity: 1 }], { duration: 320, easing: 'ease-out' });
+    if (!howRaf) howDraw();
   }
-  // which way the reader last moved: up means they are going back, so idle never pushes them forward again
-  let howY = scrollY, howUp = false, backTo = -1, howFill = 0;
-  const howBar = $('.how__bar b'), howNext = $('.how__bar i');
-  let hpWas = '', hnWas = '';
   function howTick(now) {
     howRaf = requestAnimationFrame(howTick);
-    if (!auto) {
-      const y = scrollY;
-      if (Math.abs(y - howY) > 2) {
-        howUp = y < howY;
-        if (!gliding && backTo < 0) touchedAt = now;            // any scroll that isn't ours counts as a touch (a scrollbar drag, autoscroll)
-      }
-      howY = y;
-    } else howY = scrollY;
-    const top = M.howTop - scrollY, sp = M.howH - innerHeight;
-    let f = fAt(-top / sp), next = 0;
-    const pinned = top <= 1 && top + M.howH >= innerHeight - 1;
-    if (auto) {
-      if (!pinned || document.hidden) stopAuto();
-      else {
-        const i = auto.i, d = dur(i);
-        const tau = i === N - 1 ? (endMode === 'done' || hsEnd.ended ? d : hsEnd.currentTime) : Math.min(d, auto.tau + (now - auto.at) / 1000 * auto.rate);
-        const to = tau >= d - .01 ? beat(i) : i + MV[i] * (tau / d);   // the move, then the last step onto the beat itself
-        if (to > f) { f = to; scrollTo(0, Math.round(yAt(f))); }  // never back: a reader ahead of the clip stays put
-        if (tau >= d - .01) { auto = null; restOn = i; restAt = now; document.documentElement.style.scrollBehavior = ''; document.documentElement.style.scrollSnapType = ''; }
-      }
-    } else if (!reduced && pinned && !gliding && !holdOn && !document.hidden && now - touchedAt > IDLE) {
-      const i = clamp(Math.floor(f), 0, N - 1), l = f - i, u = i === 0 ? 1 : clamp(l / MV[i], 0, 1);
-      if (u < 1 && howUp) {                                     // left mid-move on the way up: settle back onto the step before
-        const t = Math.round(yAt(beat(i - 1)));
-        if (backTo !== t) { backTo = t; go(t); }
-        if (Math.abs(scrollY - t) < 2) backTo = -1;
-      } else if (u < 1) playOn(i, i === N - 1 ? hsEnd.currentTime : u * dur(i), now);   // left mid-move on the way down: it finishes the move
-      else if (i < N - 1) {                                     // at rest on a step: a beat to read it (the thread counts it down), then on
-        backTo = -1;
-        if (restOn !== i) { restOn = i; restAt = Math.max(now, touchedAt + IDLE); }
-        if (!howUp) {
-          next = clamp((now - restAt) / (REST[i] * 1000), 0, 1);
-          if (next >= 1) { scrollTo(0, Math.round(yAt(i + 1))); playOn(i + 1, 0, now); f = i + 1; next = 0; }
-        }
-      }
-    } else if (now - touchedAt <= IDLE || gliding) restOn = -1;
-    paint(f, now);
-    const hp = howFill.toFixed(3), hn = (next ? howFill + next / N : 0).toFixed(3);
-    if (hp !== hpWas) { hpWas = hp; howBar.style.transform = `scaleX(${hp})`; }
-    if (hn !== hnWas) { hnWas = hn; howNext.style.transform = `scaleX(${hn})`; }
+    const dt = Math.min(100, now - tickAt); tickAt = now;         // (capped: a long frame or a tab coming back never skips a step)
+    if (running()) { filmT += dt; ct += dt / 1000; if (ct >= span(ci)) jump(ci + 1); }
+    howDraw();
   }
-  // the loop runs only while How it works is near the screen; out of sight, the clips rest
+  // the loop runs while How it works is near the screen; its clock moves only while it is well in view
   new IntersectionObserver(([e]) => {
     howNear = e.isIntersecting;
-    if (howNear && !howRaf) { attractAt = performance.now(); howRaf = requestAnimationFrame(howTick); }
-    else if (!howNear && howRaf) { cancelAnimationFrame(howRaf); howRaf = 0; stopAuto(); hsHold.pause(); hsEnd.pause(); }
+    if (howNear && !howRaf) { tickAt = performance.now(); howRaf = requestAnimationFrame(howTick); }
+    else if (!howNear && howRaf) { cancelAnimationFrame(howRaf); howRaf = 0; hsHold.pause(); }
   }, { rootMargin: '50% 0px' }).observe(how);
-  function howStep() { if (!howRaf) { if (!M.vw) measure(); paint(fAt((scrollY - M.howTop) / (M.howH - innerHeight)), performance.now()); } }
-  // the pager's view of How it works: which beat a scroll position is, and a notch that lands on one
-  const howBeatAt = (y) => { for (let k = 1; k < N; k++) if (Math.abs(y - yAt(beat(k))) < 3) return k; return -1; };
-  howSteps.forEach((s, k) => $('button', s).addEventListener('click', () => cutTo(k)));
+  new IntersectionObserver(([e]) => {
+    howIn = e.intersectionRatio >= .55;
+    document.body.classList.toggle('in-how', howIn);            // (a phone's quick-action bar steps aside)
+  }, { threshold: [0, .3, .55, .8, 1] }).observe(how);
+  device.addEventListener('click', () => jump(ci + 1));
+  nextKey.addEventListener('click', () => jump(ci + 1));
+  segs.forEach((b, k) => b.addEventListener('click', () => jump(k)));
+  howSteps.forEach((s, k) => $('button', s).addEventListener('click', () => jump(k)));
+  pauseKey.addEventListener('click', () => {
+    howPaused = !howPaused;
+    pauseKey.setAttribute('aria-pressed', String(howPaused));
+    pauseKey.setAttribute('aria-label', howPaused ? 'Play the walkthrough' : 'Pause the walkthrough');
+    playEl.classList.toggle('is-paused', howPaused);
+  });
 
   /* ───────────── LIVING METAL: the liquid chrome the S5 ring is made of flows behind the translucent page, far bigger
      than any screen (the ring's own shader, zoomed in until only its bands cross the frame), turning as you scroll ───────────── */
   const streamCv = document.createElement('canvas');
   streamCv.className = 'stream'; streamCv.setAttribute('aria-hidden', 'true'); document.body.appendChild(streamCv);
   // it waits out of sight behind the hero until the hero is nearly done. Its shader compiles in the background (seconds,
-  // cold, on some GPUs); setting it up holds the page for a few frames, so it is mounted by the setup, while the written
-  // lockup holds still. Its size follows the GPU (budget: ms per frame), so integrated graphics keep their frames
+  // cold, on some GPUs); setting it up holds the page for a few frames, so it is mounted by the setup, before anyone has
+  // scrolled far. Its size follows the GPU (budget: ms per frame), so integrated graphics keep their frames
   let stream = null, streamAsked = false, movedAt = 0;   // movedAt: the last scroll or wheel (the metal warms only when nobody is scrolling)
   ['scroll', 'wheel', 'touchmove'].forEach((ev) => addEventListener(ev, () => { movedAt = performance.now(); }, { passive: true }));
-  // its script loads only now (it is never needed before the end of the hero, so it never competes with the opening)
+  // its script loads only now (it is never needed before the end of the hero, so it never competes with the hero's own)
   function mountStream() {
     if (streamAsked) return; streamAsked = true;
     if (!('Molten' in window)) {
-      const sc = document.createElement('script'); sc.src = 'assets/molten.js?v=116'; sc.async = true;
+      const sc = document.createElement('script'); sc.src = 'assets/molten.js?v=118'; sc.async = true;
       sc.onload = () => { streamAsked = false; if (window.Molten) mountStream(); else streamCv.remove(); };
       sc.onerror = () => streamCv.remove(); document.head.appendChild(sc); return;
     }
@@ -805,50 +803,45 @@
       if (!stream) streamCv.remove();
     });
   }
-  let underWas = null, howGlow = 0;
+  let underWas = null, howGlow = 0, flowAt = 0, flowY = null;
   function metalFrame(now) {
     requestAnimationFrame(metalFrame);
     const vw = innerWidth, vh = innerHeight;
     if (!streamAsked && heroP > .4) mountStream();
     if (!lite && stream && stream.quality.fps <= 15) goLite();     // the metal at its lightest and still heavy: the GPU is weak
-    // the flow sits out of sight behind the opaque hero, and turns and drifts with the page after it
+    // the flow sits out of sight behind the opaque hero, and drifts with the page after it: never with the scroll's
+    // speed, only a little with its position, and slowly (eased over ~1.2 s), so it never swings or catches up
     if (stream) {
       const under = heroOn && heroP < .9, hold = under || (lite && performance.now() - movedAt < 250);   // lite: still while scrolling
       if (hold !== underWas) { underWas = hold; streamCv.dataset.paused = hold ? '1' : ''; }
       streamCv.classList.toggle('away', under);
-      const y = scrollY / vh, t = reduced ? 0 : now / 1000;
-      // while a look renders in How it works, the flow swells and turns toward the screen: the one motion is the render's
-      const glowTo = howNear && (howAt === 3 || (howAt === N - 1 && endMode === 'play')) ? 1 : 0;
-      howGlow += (glowTo - howGlow) * (reduced ? 1 : .035);
+      const dt = flowAt ? Math.min(100, now - flowAt) : 16; flowAt = now;
+      const yNow = scrollY / vh;
+      flowY = flowY === null || reduced ? yNow : flowY + (yNow - flowY) * (1 - Math.exp(-dt / 1200));
+      // lite: the flow doesn't follow the page at all (it holds while the page scrolls, and has nothing to catch up after)
+      const y = flowY, t = reduced ? 0 : now / 1000, k = lite ? 0 : 1;
+      // while a look renders in How it works (step 4's rest and step 5's move), the flow swells and turns toward the screen
+      const glowTo = howNear && rendering() ? 1 : 0;
+      howGlow += (glowTo - howGlow) * (reduced ? 1 : 1 - Math.exp(-dt / 450));
       // the loop's radius is ~12 units, so a centre ~13 to the right brings its near side sweeping through the right half
-      stream.set({ yaw: .35 + .25 * Math.sin(y * .5 + t * .03) + yawKick * .25, tiltAdd: .2 + .1 * Math.sin(y * .37) + melt * .3,
-        dx: 13 + 2.5 * Math.sin(y * .31) - 3 * howGlow, dy: 2.5 * Math.cos(y * .43), dim: (vw < 861 ? .46 : .56) + .2 * howGlow, sway: .35 + .25 * howGlow, ...(window.__streamTune || {}) });
+      stream.set({ yaw: .35 + .125 * Math.sin(k * y * .5 + t * .03) + yawKick * .25, tiltAdd: .2 + k * .05 * Math.sin(y * .37),
+        dx: 13 + k * 1.25 * Math.sin(y * .31) - 3 * howGlow, dy: k * 1.25 * Math.cos(y * .43), dim: (vw < 861 ? .46 : .56) + .2 * howGlow, sway: .35 + .25 * howGlow, ...(window.__streamTune || {}) });
     }
   }
   const spin = (by) => { yawKick += by; };
-  window.__metal = () => ({ howAt, phase, heroOn, lite, stationGpuMs: +gpuMs.toFixed(2), stream: !!stream, flow: stream && stream.quality, s5: { hero: s5vid.currentTime, hold: hsHold.currentTime, end: hsEnd.currentTime } });   // for review tools
+  window.__metal = () => ({ howAt, phase, heroOn, lite, stationGpuMs: +gpuMs.toFixed(2), stream: !!stream, flow: stream && stream.quality, s5: { hero: s5vid.currentTime, hold: hsHold.currentTime, end: null } });   // for review tools
 
-  /* ───────────── THREADS: scroll speed melts the stitches into chrome and speeds every band; rest sets them back ───────────── */
-  const threads = $$('.thread');
-  let melt = 0, vel = 0, lastY = scrollY, lastT = performance.now(), flowRaf = 0, flowList = null, meltWas = '0', rateWas = 1;
+  /* ───────────── THREADS: the stitches feed while the reader moves the page and rest when it rests. Nothing speeds up or
+     melts with scroll speed (v117): every band keeps its one pace, and the page's own moves don't set them going ───────────── */
+  const flowR = mover();
+  let flowRaf = 0, stillAt = 0;
   function flow(now) {
     flowRaf = 0;
-    const dt = Math.max(1, now - lastT), y = scrollY;
-    vel += (Math.abs(y - lastY) / dt - vel) * .2;               // px per ms, smoothed
-    lastY = y; lastT = now;
-    const target = clamp(vel / 2.2, 0, 1);
-    melt += (target - melt) * (target > melt ? .25 : .06);
-    // written only when they change by a visible step: every write restyles the threads, and every new playback rate
-    // restarts the bands' animations on the compositor
-    const m = melt.toFixed(2);
-    if (m !== meltWas) { meltWas = m; threads.forEach((t) => t.style.setProperty('--melt', m)); }
-    flowList ||= document.getAnimations().filter((an) => ['feed', 'sheen', 'tick', 'run'].includes(an.animationName));
-    const rate = Math.round((1 + melt * 4) * 4) / 4;
-    if (rate !== rateWas) { rateWas = rate; flowList.forEach((an) => { an.playbackRate = rate; }); }
-    if (melt > .003 || vel > .01) flowRaf = requestAnimationFrame(flow);
-    else { melt = 0; meltWas = '0'; rateWas = 1; threads.forEach((t) => t.style.setProperty('--melt', '0')); flowList.forEach((an) => { an.playbackRate = 1; }); document.documentElement.classList.remove('moving'); }
+    if (Math.abs(userDy(flowR)) > .5) stillAt = now;
+    if (now - stillAt < 140) flowRaf = requestAnimationFrame(flow);
+    else document.documentElement.classList.remove('moving');
   }
-  const kick = () => { if (!flowRaf && !reduced) { document.documentElement.classList.add('moving'); lastT = performance.now() - 16; flowRaf = requestAnimationFrame(flow); } };
+  const kick = () => { if (!flowRaf && !reduced) { document.documentElement.classList.add('moving'); stillAt = performance.now(); userDy(flowR); flowRaf = requestAnimationFrame(flow); } };
 
   /* ───────────── BAND: hides as you read down; the slightest scroll up brings it back ───────────── */
   const band = $('#band'), menu = $('.band__menu'), nav = $('#bandNav'), contact = $('#contact');
@@ -868,12 +861,13 @@
     else if (['ArrowDown', 'PageDown', 'End', ' '].includes(e.key)) { intentAt = performance.now(); showBand(false); }
   });
   band.addEventListener('focusin', () => showBand(true));
-  let pastWas = null;
+  let pastWas = null, upRun = 0;
+  const headR = mover();
   function header() {
-    const y = scrollY;
+    const y = scrollY, d = userDy(headR);                       // the reader's own scroll: the page's moves don't count
     if (y < 90) showBand(true);
     else if (performance.now() - intentAt > 900) {             // no wheel or touch just now (a scrollbar drag): read the scroll itself
-      if (y < prevY - 2) showBand(true); else if (y > prevY + 6) showBand(false);
+      if (d < 0) { upRun -= d; if (upRun > 40) showBand(true); } else if (d > 6) { upRun = 0; showBand(false); }
     }
     prevY = y;
     const past = y > M.heroH - innerHeight * .6;
@@ -889,45 +883,105 @@
   }, { rootMargin: '-45% 0px -54% 0px' });
   navSecs.forEach((s) => s && navIO.observe(s));
 
-  /* ───────────── PAGER: on a desktop, every mouse-wheel flick or arrow key lands the next scene, or the next beat of a pinned
-     stage, in either direction. A trackpad keeps the browser's own scrolling (its momentum, smooth both ways) ───────────── */
-  function snapPoints() {
-    const y = scrollY;
-    const ps = [...$$('.snap'), ...$$('.win')].map((el) => Math.round(el.getBoundingClientRect().top + y));
-    ps.push(document.documentElement.scrollHeight - innerHeight);
+  /* ───────────── PAGER: on a desktop with a mouse, every wheel notch or paging key lands the next scene, or the next beat
+     of a pinned stage: one beat per notch, either way, with a turn honoured at once. A trackpad keeps the browser's own
+     scrolling (its momentum, smooth both ways) ───────────── */
+  // the beats: every scene's top and the pinned stages' marks, the page's end, and the bottom of any scene taller than the
+  // window (so a short window reaches all of it)
+  function beats() {
+    const y = scrollY, ps = [...$$('.snap'), ...$$('.win')].map((el) => Math.round(el.getBoundingClientRect().top + y));
+    // (only where there is something to reach: a scene a few px taller than the window would make a beat that barely moves)
+    $$('.win').forEach((el) => { const r = el.getBoundingClientRect(); if (r.height > innerHeight * 1.12) ps.push(Math.round(r.top + y + r.height - innerHeight)); });
+    ps.push(Math.round(maxY()));
     return [...new Set(ps)].sort((a, b) => a - b);
   }
-  function step(dir) {
-    const y = gliding ? glideTarget : scrollY, ps = snapPoints();
-    const t = dir > 0 ? ps.find((c) => c > y + 4) : [...ps].reverse().find((c) => c < y - 4);
-    if (t === undefined) return;
-    // a notch onto the next beat of How it works plays that move at the kiosk's own pace (carrying the page with it), so
-    // a render or the ending is watched, not skimmed in a fifth of a second
-    const k = dir > 0 && !reduced && !gliding ? howBeatAt(t) : -1;
-    if (k < 1) { glideTo(t); return; }
-    stopAuto();
-    const fy = fAt((y - M.howTop) / (M.howH - innerHeight));
-    playOn(k, fy > k ? clamp((fy - k) / MV[k], 0, 1) * dur(k) : 0, performance.now());
-    if (fy < k) scrollTo(0, Math.round(yAt(k)));
-  }
-  // each gesture's first event says what made it: a trackpad sends fine, often fractional pixel deltas (and a little
-  // sideways drift); a mouse wheel sends whole notches. A pause ends a gesture
-  let quietAt = 0, used = false, acc = 0, pad = false, padAt = 0;
-  addEventListener('wheel', (e) => {
-    if (!pagerOn.matches || e.ctrlKey || window.__nosnap || document.documentElement.classList.contains('splashing')) return;
-    const now = performance.now(), fresh = now - quietAt > 180;
-    quietAt = now;
-    if (fresh) { used = false; acc = 0; pad = e.deltaMode === 0 && (Math.abs(e.deltaY) < 50 || !Number.isInteger(e.deltaY) || e.deltaX !== 0); }
-    if (pad) { padAt = now; stopGlide(); touched(); return; }  // the trackpad scrolls the page itself
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;       // sideways: the pose strip
-    e.preventDefault();
-    if (used) return;
-    acc += e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
-    if (Math.abs(acc) >= 28) {
-      used = true; touchedAt = now;
-      if (acc > 0 && hurry()) return;                           // a move is playing: this notch finishes it, quickly
-      stopAuto(); step(Math.sign(acc));                         // during a glide, a new flick goes one further
+  let stepAt = -1e9;
+  function stepBeat(dir) {
+    const now = performance.now(), gap = now - stepAt; stepAt = now;
+    if (FW.pend && Math.sign(FW.pend) !== dir) FW.pend = 0;   // a turn drops what was queued the other way
+    const ps = beats(), y = scrollY;
+    const going = FW.on ? Math.sign(FW.tgt - FW.py) : 0;
+    // autoplay or a settle-back under way: the reader takes it over, speed and all, and the notch counts from where the
+    // page is (the next beat that way; from a beat it is on or within 8 px of, the one after it)
+    const own = FW.on && FW.why === 'glide';
+    if (FW.on && !own) FW.why = 'glide';
+    let t;
+    if (own && going === dir) t = dir > 0 ? ps.find((c) => c > FW.tgt + 1) : [...ps].reverse().find((c) => c < FW.tgt - 1);   // on the way: one further
+    else if (own && going === -dir) t = dir > 0 ? ps.find((c) => c >= y - .5) : [...ps].reverse().find((c) => c <= y + .5);   // a turn: back to the beat behind
+    else {
+      const base = ps.find((c) => Math.abs(c - y) <= 8) ?? y;   // at rest on (or within 8 px of) a beat: from that beat
+      t = dir > 0 ? ps.find((c) => c > base + 1) : [...ps].reverse().find((c) => c < base - 1);
     }
+    if (t === undefined) return;
+    // never more than two beats ahead of the beat nearest the page (a free-spinning wheel would run away with it)
+    // (a deliberate notch, 90 ms or more after the last, isn't lost there: it waits its turn, six at most, and the move
+    // speeds up for it; a free-spin's notches, closer than that, are)
+    const at = nearest(ps, y), ti = ps.indexOf(t);
+    if ((ti - at) * dir > 2) {
+      t = ps[clamp(at + 2 * dir, 0, ps.length - 1)];
+      if (FW.on && gap >= 90 && Math.abs(FW.pend) < 6) { FW.pend += dir; FW.ps = ps; }
+    }
+    aim(t, { lim: capped(null) });
+  }
+  // a wheel stream (events under 240 ms apart) is judged as a whole: it starts as a mouse's when its first event is a
+  // whole step (28 px or more, nothing sideways), and turns into a trackpad's (native, let go at once) the moment an event
+  // isn't a whole multiple of that step or moves sideways. Lines and pages are counted as 33 px and a window
+  const WS = { at: -1e9, kind: '', unit: 100, prev: 0, start: 0, hold: false, last: [0, 0, 0], y0: 0, dir: 0, same: 0, rep: 0, sum: 0 };
+  let acc = 0, padAt = -1e9;
+  // (?debug, or a local server: the last 240 wheel events as the page got them, so a real touchpad's deltas can be read
+  // off with __layerDebug.wheels() before its stream is ever classed)
+  const wheelLog = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || /[?&]debug\b/.test(location.search) ? [] : null;
+  addEventListener('wheel', (e) => {
+    if (wheelLog) { wheelLog.push([Math.round(e.timeStamp), e.deltaY, e.deltaX, e.deltaMode, WS.kind]); if (wheelLog.length > 240) wheelLog.shift(); }
+    if (!pagerOn.matches || e.ctrlKey || window.__nosnap) return;
+    const now = performance.now();
+    const dy = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? innerHeight : 1);
+    const fresh = now - WS.at > 240;
+    WS.at = now;
+    if (fresh) { WS.kind = Math.abs(dy) >= 28 && e.deltaX === 0 ? 'notch' : 'pad'; WS.unit = Math.abs(dy); WS.start = now; WS.prev = 0; WS.hold = false; WS.last = [0, 0, Math.abs(dy)]; WS.y0 = scrollY; WS.dir = Math.sign(dy); WS.same = e.deltaX === 0 ? 1 : 0; WS.rep = WS.same; WS.sum = 0; acc = 0; }
+    else {
+      if (Math.sign(dy) !== WS.dir) WS.dir = 0;
+      if (WS.kind === 'notch') {
+        const k = Math.abs(dy) / WS.unit, r = Math.round(k);
+        // (a mouse repeats its step exactly, or whole multiples of it when events coalesce; a trackpad's deltas drift)
+        if (e.deltaX !== 0 || r < 1 || Math.abs(k - r) > .002 * r) { WS.kind = 'pad'; if (FW.on && FW.why === 'glide') stopFollow(); }
+      } else {
+        // (the browser may merge two of its steps into one event: a whole multiple counts as that many)
+        const q = Math.abs(dy) / WS.unit, qr = Math.round(q);
+        WS.same = WS.same && e.deltaX === 0 && qr >= 1 && Math.abs(q - qr) <= .002 * qr ? WS.same + qr : 0;
+        // (and how many of its events so far are that very step, one after another from the first)
+        WS.rep = WS.rep && WS.rep === WS.same - qr && qr === 1 ? WS.rep + 1 : 0;
+        // a high-resolution wheel: one small step of 4 px or more, repeated exactly, three events in a row from the first,
+        // inside its first 80 ms, nothing sideways. A trackpad never does that: its deltas ramp up as a swipe starts (1, 2,
+        // 3 px ... from a touchpad that reports whole pixels; .8, 1.6, 2.4 at 125%), and they are only ever a whole
+        // multiple of the first, never the same one three times. From here it pages like a mouse: 100 px a notch,
+        // counted from its first step
+        if (WS.kind === 'pad' && WS.rep >= 3 && WS.unit >= 4 && now - WS.start < 80 && !WS.hold) { WS.kind = 'fine'; acc = WS.sum; }
+        else if (WS.kind === 'fine' && !WS.same) { WS.kind = 'pad'; if (FW.on && FW.why === 'glide') stopFollow(); }
+      }
+    }
+    WS.sum += dy;
+    if (WS.kind === 'pad') {
+      // a link's glide is not stopped by the trackpad's momentum still coming in (the same way, smaller and smaller); a new
+      // swipe (a bigger delta, or the other way) is the reader's, and stops it
+      // (momentum wobbles a little from one event to the next: it is judged against the last few)
+      const was = Math.max(...WS.last);
+      WS.last = [WS.last[1], WS.last[2], Math.abs(dy)];
+      if (WS.hold && Math.sign(dy) === Math.sign(WS.prev) && Math.abs(dy) <= was * 1.25 + .5) { WS.prev = dy; e.preventDefault(); return; }
+      // the trackpad scrolls the page itself, and is never landed: not when its deltas drift, and not when they happen to
+      // be whole multiples of its first (a touchpad that reports whole device pixels). Only a stream classed 'fine' above
+      // is a wheel
+      WS.hold = false; WS.prev = dy;
+      padAt = now;
+      if (FW.on && FW.anchor) stopFollow();                      // (a new swipe during a link's move: the reader's)
+      return;
+    }
+    WS.prev = dy;
+    e.preventDefault();
+    const unit = WS.kind === 'fine' ? 100 : WS.unit;
+    if (Math.sign(dy) !== Math.sign(acc)) acc = 0;
+    acc += dy;
+    while (Math.abs(acc) >= unit * .98) { const d = Math.sign(acc); acc -= d * unit; stepBeat(d); }
   }, { passive: false });
   addEventListener('keydown', (e) => {
     if (!pagerOn.matches || e.altKey || e.ctrlKey || e.metaKey || window.__nosnap) return;
@@ -937,40 +991,93 @@
     const up = e.key === 'ArrowUp' || e.key === 'PageUp' || (space && e.shiftKey);
     if (!down && !up) return;
     e.preventDefault();
-    if (!gliding) step(down ? 1 : -1);
+    stepBeat(down ? 1 : -1);                                   // key repeat pages on smoothly: no key is dropped mid-move
   });
-  // a scrollbar drag lands on the nearest beat; anchors glide to their scene
-  addEventListener('scrollend', () => {
-    if (!pagerOn.matches || gliding || window.__nosnap || auto || performance.now() - padAt < 1500) return;
-    if (autoScroll) { autoScroll = false; return; }
-    const y = scrollY, ps = snapPoints(), t = ps.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
-    if (Math.abs(t - y) > 6) glideTo(t);
-  });
+  // anything else that leaves the page between beats (the scrollbar, Home and End, find, a touch screen) lands on the nearest
+  // (never while a wheel stream is still coming in: it lands once the stream has ended)
+  let landT = 0;
+  function landing() {
+    if (!pagerOn.matches || FW.on || window.__nosnap) return;
+    const now = performance.now();
+    if (now - padAt < 1500) return;
+    if (now - WS.at < 240) { clearTimeout(landT); landT = setTimeout(landing, 260 - (now - WS.at)); return; }
+    const y = scrollY, ps = beats();
+    let t = ps.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
+    // a high-resolution mouse wheel (classed 'fine': one small step repeated exactly) is still a wheel: it lands the next
+    // beat the way it turned, as a notch would, not the nearest one (which is often back where it started). A trackpad's
+    // stream never gets here (padAt), whatever its deltas look like
+    const d = WS.dir;
+    if (WS.kind === 'fine' && d && now - WS.at < 1500 && Math.abs(y - WS.y0) > 2) {
+      const ahead = ps.filter((c) => (c - WS.y0) * d > 1);
+      if (ahead.length) t = ahead.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
+    }
+    if (Math.abs(t - y) > 6) aim(t, { lim: capped(null) });
+  }
+  addEventListener('scrollend', landing);
+  // a link: the follower carries the page to its scene (free of How's pace: a link is a jump, not a film)
+  const linkTarget = (el) => { const top = el.getBoundingClientRect().top + scrollY; return pagerOn.matches ? beats().find((c) => c >= top - 2) ?? top : top; };
   $$('a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => {
     const el = a.getAttribute('href').length > 1 && $(a.getAttribute('href'));
     if (!el || !pagerOn.matches) return;
     e.preventDefault();
-    const top = el.getBoundingClientRect().top + scrollY, ps = snapPoints();
-    glideTo(ps.find((c) => c >= top - 2) ?? top);
+    WS.hold = performance.now() - WS.at < 240 && WS.kind === 'pad';   // the trackpad's momentum still coming in
+    aim(linkTarget(el), { anchor: true, lim: capped(null) });
     if (!el.matches('a[href], button, input, select, textarea, [tabindex]')) el.setAttribute('tabindex', '-1');
     el.focus({ preventScroll: true });
   }));
+  // back and forward: the page restores nothing by itself (the scenes below it weren't laid out when it saved a place);
+  // it renders every scene, then lands on the section: a jump when it is far, the follower when it is near
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  let navAt = -1e9;
+  document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('a[href^="#"]')) navAt = performance.now(); }, true);
+  function toHash(ev) {
+    if (ev.type === 'hashchange' && performance.now() - navAt < 150 && !pagerOn.matches) return;   // a link the browser itself is scrolling to
+    const el = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (!el) return;
+    warmAll();
+    requestAnimationFrame(() => {
+      const t = linkTarget(el);
+      if (Math.abs(t - scrollY) > 1.5 * innerHeight) { stopFollow(); setY(t, 'hash'); } else aim(t, { anchor: true, lim: capped(null) });
+    });
+  }
+  addEventListener('popstate', toHash);
+  addEventListener('hashchange', toHash);
 
   // one scroll handler for the whole page, once per frame
   let ticking = false;
+  const scrollR = mover();
   function onScroll() {
-    kick();
+    if (Math.abs(userDy(scrollR)) > .5) kick();                 // the threads feed only while the reader moves the page
     if (ticking) return;
     ticking = true;
-    requestAnimationFrame(() => { ticking = false; if (heroOn) layoutHero(); howStep(); wake(); header(); });
+    requestAnimationFrame(() => { ticking = false; if (heroOn && !FW.on) layoutHero(); wake(); header(); });
   }
   addEventListener('scroll', onScroll, { passive: true });
-  const resized = () => { measure(); if (station) station.size(pageW(), innerHeight, stationDpr()); sizeScreen(); layoutHero(); placeHowScreen(); howStep(); dirty = true; wake(); };
+  // a resize keeps the reader's place in the pinned stages (their film position, not their pixel), so a rotation or a
+  // window drag never moves the How step or the hero's camera under them. A change of height alone (a browser toolbar)
+  // lays out again without rebuilding the 3D frame; anything else lays out at once and rebuilds it 150 ms after the last
+  let stationT = 0;
+  function resized() {
+    const w0 = M.vw, h0 = M.vh, y = scrollY;
+    const inHero = M.heroH && y > M.heroTop + 1 && y <= M.heroTop + M.heroH - M.heroStage, pHero = inHero ? (y - M.heroTop) / (M.heroH - M.heroStage) : 0;
+    measure();
+    const toolbar = w0 === M.vw && h0 && Math.abs(M.vh - h0) < .25 * h0;
+    sizeScreen();
+    if (!toolbar) { clearTimeout(stationT); stationT = setTimeout(() => { if (station) { station.size(pageW(), innerHeight, stationDpr()); quadDirty = true; layoutHero(); } }, 150); }
+    const keep = inHero ? M.heroTop + pHero * (M.heroH - M.heroStage) : y;
+    if (w0 && Math.abs(keep - scrollY) > 1) { stopFollow(); setY(Math.round(keep), 'hash'); }
+    layoutHero(); placeHowScreen(); dirty = true; wake();
+  }
   addEventListener('resize', resized);
   // anything that moves the page's geometry without a resize re-measures (fonts arriving, a phone's sections settling);
   // a change of width (a scrollbar coming or going) resizes everything, the 3D frame included
   new ResizeObserver(() => { const w = pageW(); if (w !== M.vw || w !== sizedW) resized(); else { measure(); if (heroOn) layoutHero(); } }).observe(document.body);
-  placeHowScreen(); howStep(); header();
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || /[?&]debug\b/.test(location.search)) {
+    window.__layerDebug = { state: () => ({ follow: { on: FW.on, py: FW.py, pv: FW.pv, tgt: FW.tgt, w: FW.w, why: FW.why, anchor: FW.anchor }, how: { i: ci, t: ct, paused: howPaused, in: howIn }, heroP, heroA, wipeT, wipeTo, howGlow, lite, M: { ...M } }), beats, wheels: () => (wheelLog || []).slice(),
+      // (review: holds the film at step i, t s into it)
+      howAt: (i, t) => { ci = i; ct = t; howPaused = true; playEl.classList.add('is-paused'); howDraw(); } };
+  }
+  placeHowScreen(); howDraw(); header();
   requestAnimationFrame(metalFrame);
 
   // CSS-drawn pictures (the print loupes) download only as their scene comes near
@@ -982,7 +1089,7 @@
   // a jump to a section (any #link) renders the whole page first, so every scene above the target has its real height
   // and the jump lands exactly on it
   const warmAll = () => { scenes.forEach((s) => { s.classList.add('warm'); warmIO.unobserve(s); }); measure(); };
-  // the setup, in turn, while the written lockup holds still: the station, then the try-on, then every scene's layout
+  // the setup, in turn, from the first frames: the station, then the try-on, then every scene's layout
   // and the metal's shader (which goes on compiling in the background); the close-up wall and the clip load alongside
   setup.then(async () => {
     await Promise.race([Promise.all([stationReady, tryReady]), wait(2500)]);   // a slow line doesn't hold the rest
@@ -996,9 +1103,6 @@
   // box to watch until the scene is already close)
   const nearIO = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { $$('.zoom', e.target).forEach((z) => z.classList.add('near')); nearIO.unobserve(e.target); } }), { rootMargin: '100% 0px' });
   [...new Set($$('.zoom').map((z) => z.closest('section') || z.parentElement))].forEach((s) => nearIO.observe(s));
-
-  /* ───────────── FAQ: the metal turns with each answer ───────────── */
-  $$('.faq details').forEach((d) => d.addEventListener('toggle', () => spin(d.open ? Math.PI / 2 : -Math.PI / 2)));
 
   /* ───────────── YOUR PILOT sheet: a good send posts to /api/contact (the site's Worker, which files it in the
      enquiries sheet and mails hello@) and the metal turns once. Where there is no form handler (a local server,
