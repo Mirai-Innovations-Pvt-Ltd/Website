@@ -24,7 +24,7 @@
 <link rel="manifest" href="site.webmanifest">
 <link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="preload" href="assets/fonts/ibm-plex-mono/ibm-plex-mono-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css?v=119">
+<link rel="stylesheet" href="style.css?v=120">
 <link rel="preload" href="assets/station/station.bundle.js?v=118" as="script">
 <script type="application/ld+json">
 {"@context": "https://schema.org", "@graph": [
@@ -102,7 +102,7 @@
       <img class="scr-band" src="assets/screens/layer/band.webp" width="540" height="57" alt="" aria-hidden="true">
     </div>
     <div class="hero__grain" aria-hidden="true"></div>
-    <div class="hero__say"><p class="hero__line">The fitting room,<br>minus the room.</p><p class="hero__sub">Walk-up virtual try-on for fashion stores</p></div>
+    <div class="hero__say"><p class="hero__line">The fitting room,<br>minus the room.</p><p class="hero__pitch">Advertising that wears the shopper. Your collection, tried on by everyone who walks up.</p><a class="key key--bone hero__key" href="#contact">Let's pilot <span class="key__go">→</span></a></div>
     <div class="hero__cue" aria-hidden="true"><i></i><b></b></div>
   </div>
 </section>
@@ -169,13 +169,33 @@
   </div>
 </section>
 
-<!-- ───────────── CREW: in a brand experience room ───────────── -->
-<section class="win crew" id="crew" aria-label="Crew mode">
-  <figure class="crew__shot"><img loading="lazy" src="assets/img/crew.webp" width="1800" height="1476" alt="Seen from just behind three friends in a clothing store: the Layer Station, turned toward them, shows the same three twinning in matching sage-green tees under THERE YOU ARE."></figure>
-  <div class="crew__copy">
-    <h2 class="h1">Twin with<br>your crew.</h2>
-    <p class="lede">Bring your crew into one capture and try matching fits together. It's how people actually shop on a Saturday.</p>
+<!-- ───────────── PILOTS: the readout ───────────── -->
+<section class="win pilot" id="pilot" aria-label="Run a pilot">
+  <div class="pilot__copy">
+    <h2 class="h1">Run a pilot.<br>Keep the data.</h2>
+    <ol class="pilot__steps">
+      <li><b>Before</b><span>You send the drop. We skin the station in your identity and install it.</span></li>
+      <li><b>The run</b><span>Shoppers walk up and try the drop on. We run it; your team sells.</span></li>
+      <li><b>After</b><span>Your readout: sessions, try-on rate and the most-tried pieces.</span></li>
+    </ol>
+    <div class="pilot__keys">
+      <a class="key key--bone pilot__go" href="#contact">Let's pilot <span class="key__go">→</span></a>
+      <a class="key key--line" href="https://wa.me/916383410936?text=Hi%20Mirai%2C%20I%27d%20like%20to%20see%20Layer%20live." target="_blank" rel="noopener">See it live</a>
+    </div>
   </div>
+  <article class="readout" aria-label="Pilot 01 readout">
+    <header class="readout__head">
+      <img style="aspect-ratio: 354 / 164" loading="lazy" decoding="async" src="assets/logos/layer-wordmark-bone.svg" alt="layer">
+      <span>Pilot readout</span>
+      <em>Pilot 01</em>
+    </header>
+    <div class="readout__kpis">
+      <div><b>90<small>%</small></b><span>of shoppers tried on</span></div>
+      <div><b>17</b><span>sessions an hour</span></div>
+      <div><b>86</b><span>shoppers in one day</span></div>
+    </div>
+    <footer>Measured over one day at a streetwear pop-up, October 2026. Your readout comes from your own run.</footer>
+  </article>
 </section>
 
 <!-- ───────────── THE FIRST PILOT · MAX URB_N'S UN-MUTE (closed; shown in Max's own tone) ───────────── -->
@@ -197,23 +217,6 @@
     </div>
   </section>
 
-  <section class="win drop__floor" aria-label="UN-MUTE, from the floor">
-    <div class="floor__head">
-      <h2 class="mx-h mx-h--sm">From the floor.</h2>
-      <p class="floor__k">UN-MUTE · Express Avenue, Chennai · 24 Oct 2026</p>
-    </div>
-    <div class="floor">
-      <div class="floor__row" style="--s: 3.402">
-        <figure class="fl" style="--a: 2.286"><img width="1280" height="560" loading="lazy" src="assets/img/ev-booth.webp" alt="The UN-MUTE pop-up: the Layer Station beside the Max rails and the Fit Vault wall"></figure>
-        <figure class="fl" style="--a: 1.116"><img width="960" height="860" loading="lazy" src="assets/img/ev-watch.webp" alt="A crowd watching the station render a look, A new perspective on its screen"></figure>
-      </div>
-      <div class="floor__row" style="--s: 3.225">
-        <figure class="fl" style="--a: .914"><img width="960" height="1050" loading="lazy" src="assets/img/ev-crowd.webp" alt="A crowd gathered round the station while one shopper picks bottoms"></figure>
-        <figure class="fl" style="--a: 1.561"><img width="1280" height="820" loading="lazy" src="assets/img/ev-film.webp" alt="Two shoppers choosing tops on the station while a videographer films"></figure>
-        <figure class="fl" style="--a: .75"><img width="900" height="1200" loading="lazy" src="assets/img/ev-side.webp" alt="Watching the A new perspective screen as a look renders, at UN-MUTE"></figure>
-      </div>
-    </div>
-  </section>
 
   <section class="win drop__skin" aria-label="Skinned for the drop">
     <div class="skin__copy">
@@ -227,20 +230,6 @@
     </div>
   </section>
 
-  <section class="win drop__prints" aria-label="UN-MUTE instant prints, event only">
-    <div class="prints__copy">
-      <p class="ltd">UN-MUTE only</p>
-      <h2 class="mx-h mx-h--sm">They took the look<br>home.</h2>
-      <p>At UN-MUTE only, a look could leave the station as an instant print, framed in Max's mark and ours.</p>
-    </div>
-    <div class="prints__table">
-      <figure class="pol pol--1"><img loading="lazy" src="assets/img/print-unmute.webp" width="532" height="852" alt="A test print from our cabin: a shopper in a red graphic tee, in the UN-MUTE frame"></figure>
-      <figure class="pol pol--3"><img loading="lazy" src="assets/img/print-duo.webp" width="532" height="852" alt="A test print from our cabin: two friends in matching white graphic tees, in the UN-MUTE frame"></figure>
-      <figure class="pol pol--4"><img loading="lazy" src="assets/img/print-urbn-2.webp" width="760" height="1210" alt="An UN-MUTE instant print: a shopper in a band tee and khaki trousers, framed with max URB_N and layer by Mirai"></figure>
-      <figure class="pol pol--5"><img loading="lazy" src="assets/img/print-jacket.webp" width="532" height="852" alt="A test print from our cabin: a shopper in a brown zip hoodie and light jeans, in the UN-MUTE frame"></figure>
-      <p class="prints__note">Some prints are from our test runs, before the doors opened.</p>
-    </div>
-  </section>
 </div>
 
 <!-- ───────────── FOR BRANDS: what a station brings ───────────── -->
@@ -265,43 +254,13 @@
   </ul>
 </section>
 
-<!-- ───────────── PILOTS: the readout ───────────── -->
-<section class="win pilot" id="pilot" aria-label="Run a pilot">
-  <div class="pilot__copy">
-    <h2 class="h1">Run a pilot.<br>Keep the data.</h2>
-    <ol class="pilot__steps">
-      <li><b>Before</b><span>You send the drop. We skin the station in your identity and install it.</span></li>
-      <li><b>The run</b><span>Shoppers walk up and try the drop on. We run it; your team sells.</span></li>
-      <li><b>After</b><span>Your readout: sessions, try-on rate and the most-tried pieces.</span></li>
-    </ol>
-    <div class="pilot__keys">
-      <a class="key key--bone pilot__go" href="#contact">Let's pilot <span class="key__go">→</span></a>
-      <a class="key key--line" href="https://wa.me/916383410936?text=Hi%20Mirai%2C%20I%27d%20like%20to%20see%20Layer%20live." target="_blank" rel="noopener">See it live</a>
-    </div>
+<!-- ───────────── CREW: in a brand experience room ───────────── -->
+<section class="win crew" id="crew" aria-label="Crew mode">
+  <figure class="crew__shot"><img loading="lazy" src="assets/img/crew.webp" width="1800" height="1476" alt="Seen from just behind three friends in a clothing store: the Layer Station, turned toward them, shows the same three twinning in matching sage-green tees under THERE YOU ARE."></figure>
+  <div class="crew__copy">
+    <h2 class="h1">Twin with<br>your crew.</h2>
+    <p class="lede">Bring your crew into one capture and try matching fits together. It's how people actually shop on a Saturday.</p>
   </div>
-  <article class="readout" aria-label="A sample pilot readout">
-    <header class="readout__head">
-      <img style="aspect-ratio: 354 / 164" loading="lazy" decoding="async" src="assets/logos/layer-wordmark-bone.svg" alt="layer">
-      <span>Pilot readout</span>
-      <em>Sample</em>
-    </header>
-    <div class="readout__kpis">
-      <div><b>90<small>%</small></b><span>try-on rate</span></div>
-      <div><b>17</b><span>sessions an hour</span></div>
-      <div><b>2×</b><span>tries for the top piece vs the next</span></div>
-    </div>
-    <div class="readout__top">
-      <p class="readout__k">Most tried on <span>relative to #1</span></p>
-      <ol>
-        <li><b>#1</b><span>Varsity jacket</span><i class="t" style="--w:100%"></i></li>
-        <li><b>#2</b><span>Crop tee <small>tie</small></span><i class="t" style="--w:50%"></i></li>
-        <li><b>#2</b><span>Striped top <small>tie</small></span><i class="t" style="--w:50%"></i></li>
-        <li><b>#2</b><span>Printed tee <small>tie</small></span><i class="t" style="--w:50%"></i></li>
-        <li><b>#5</b><span>Bomber jacket</span><i class="t" style="--w:38%"></i></li>
-      </ol>
-    </div>
-    <footer>A sample, to show the format. Your readout comes from your own run.</footer>
-  </article>
 </section>
 
 <!-- ───────────── LAYER STATION ───────────── -->
@@ -436,6 +395,6 @@
   <a class="key key--bone key--sm" href="#contact">Let's pilot <span class="key__go">→</span></a>
 </div>
 
-<script src="app.js?v=118"></script>
+<script src="app.js?v=120"></script>
 </body>
 </html>
