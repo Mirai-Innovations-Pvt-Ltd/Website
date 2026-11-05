@@ -205,7 +205,7 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
 .how__steps button { all: unset; cursor: pointer; display: flex; align-items: baseline; gap: 18px; }
 .how__steps button:focus-visible { outline: 2px solid var(--lilac); outline-offset: 4px; }
 /* (the numerals are quiet: the bar under them is the progress, the list only names the steps) */
-.how__steps b { font: 600 12px var(--mono); letter-spacing: .16em; color: rgba(138, 143, 153, .5); width: 22px; }
+.how__steps b { font: 600 12px var(--mono); letter-spacing: .16em; color: rgba(138, 143, 153, .86); width: 22px; }   /* 4.7:1 on void */
 .how__steps span { font: 800 clamp(20px, 2vw, 28px)/1.1 var(--display); font-variation-settings: 'wdth' 118; text-transform: uppercase; color: var(--steel); transform: scale(.74); transform-origin: 0 70%; transition: color .3s, transform .35s var(--out); }
 .how__steps li.on b { color: var(--text-2); }
 .how__steps li.on span { color: var(--bone); transform: none; }
@@ -271,7 +271,7 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
 
 /* ── THE FIRST PILOT: Max's tone (condensed caps, lime, booth charcoal) ── */
 .drop { position: relative; overflow: hidden; background: linear-gradient(180deg, rgba(8, 7, 10, 0), rgba(27, 25, 38, .84) 14%, rgba(20, 18, 28, .84) 86%, rgba(8, 7, 10, 0)); }
-.tick { overflow: hidden; background: var(--event); color: var(--ink); padding: 12px 0; z-index: 3; box-shadow: 0 10px 40px rgba(157, 255, 0, .15); }
+.tick { overflow: hidden; background: var(--event); color: var(--ink); padding: 12px 0; z-index: 3; }
 /* full bleed, wider than the window on both sides, so the tilt never shows an end */
 .drop__live .tick { position: absolute; top: calc(var(--band) + 14px); left: 50%; width: calc(100vw + 160px); margin-left: calc(-50vw - 80px); transform: rotate(-1.2deg); }
 .tick__track { display: inline-flex; white-space: nowrap; font: 900 clamp(15px, 1.4vw, 20px)/1 var(--display); font-variation-settings: 'wdth' 70; letter-spacing: .04em; text-transform: uppercase; animation: tick 38s linear infinite; }
@@ -498,7 +498,7 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
 .thread--lid { top: 0; height: 2px; }
 .sheet__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
 .sheet__head b { font: 900 28px var(--display); font-variation-settings: 'wdth' 125; }
-.sheet__head span { font: 500 11px var(--mono); letter-spacing: .14em; color: var(--steel); text-transform: uppercase; }
+.sheet__head span { font: 500 11px var(--mono); letter-spacing: .14em; color: var(--text-2); text-transform: uppercase; }   /* 6.6:1 on the violet sheet */
 .seg { display: inline-flex; box-shadow: inset 0 0 0 1px var(--line); margin-bottom: 22px; }
 .seg--role { border: 0; padding: 0; margin: 0 0 4px; }
 .seg--role label { position: relative; cursor: pointer; }
@@ -586,6 +586,8 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
      not all of it (v117 round 2; it was 240vh with the push in the first .42) */
   .hero { height: 360vh; }
   .hero__say { bottom: calc(96px + env(safe-area-inset-bottom)); right: var(--gut); }
+  /* the caption sits over the station's stand on a phone: a quiet floor of void behind it keeps the subline whole */
+  .hero__say::after { content: ''; position: absolute; z-index: -1; left: calc(-1 * var(--gut)); right: calc(-1 * var(--gut)); top: -44px; bottom: -28px; background: linear-gradient(to bottom, rgba(8, 7, 10, 0), rgba(8, 7, 10, .84) 42%); }
   .hero__line { font-size: clamp(26px, 8.4vw, 34px); }
   .hero__sub { font-size: 11px; }
   .pose { grid-template-columns: minmax(0, 1fr); min-height: 100svh; align-content: center; gap: 22px; padding-bottom: 92px; }
