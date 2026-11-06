@@ -189,7 +189,7 @@
     heroMid.style.setProperty('--at', act());                  // (the hero's middle mark: where act one ends)
   }
   const cue = $('.hero__cue'), say = $('.hero__say'), stageEl = $('.hero__stage'), heroMid = $$('.snap', hero)[1];
-  let cueO = '', sayO = '', stageO = '', quadDirty = true;                             // the live screen needs placing (new station, new size)
+  let cueO = '', sayO = '', sayGone = null, stageO = '', quadDirty = true;                             // the live screen needs placing (new station, new size)
   function layoutHero(now = performance.now()) {
     if (!M.vw) measure();
     const vw = M.vw, vh = M.heroStage;
@@ -241,7 +241,12 @@
     if (cue && co !== cueO) { cueO = co; cue.style.opacity = co; }
     // what Layer is, in words, until the camera starts to move in
     const so = clamp(1 - p * 7, 0, 1).toFixed(2);
-    if (so !== sayO) { sayO = so; say.style.opacity = so; }
+    if (so !== sayO) {
+      sayO = so; say.style.opacity = so;
+      // the hero's Let's pilot key is the one in view until its words fade; then the band's own key takes over (v121)
+      const gone = so <= .25;
+      if (gone !== sayGone) { sayGone = gone; document.documentElement.classList.toggle('say-gone', gone); }
+    }
     // the end of the hero: the stage dissolves into the liquid metal behind it, so One pose rises out of the flow
     // instead of the hall sliding away as a hard-edged block
     const fo = reduced ? '1' : clamp((1 - p) / .1, 0, 1).toFixed(3);

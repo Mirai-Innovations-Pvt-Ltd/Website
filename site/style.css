@@ -162,6 +162,11 @@ main > .win.warm, main > * > .win.warm, .foot.warm { content-visibility: visible
    On a phone the quick-action bar already carries Let's pilot, so the key steps aside there */
 .hero__pitch { margin: 16px 0 0; max-width: 31em; font: 600 clamp(15px, 1.25vw, 19px)/1.4 var(--display); color: var(--bone); }
 .hero__key { margin-top: 22px; pointer-events: auto; }
+/* one Let's pilot at a time: the band's key waits while the hero's is in view, and comes in once the hero's words fade
+   or the page is past the hero (a jump straight to a section counts too) */
+.band__go { transition: opacity .3s, visibility .3s; }
+html:not(.say-gone) body:not(.past-hero) .band__go { opacity: 0; visibility: hidden; }
+html.say-gone .hero__key { pointer-events: none; }
 .hero__cue { gap: 6px; }
 /* the cue: the band's stitches feeding down, into a chevron that bobs (transform only, so it costs the page nothing) */
 .hero__cue i { position: relative; width: 2px; height: 64px; overflow: hidden; -webkit-mask: linear-gradient(transparent, #000 30%, #000 75%, transparent); mask: linear-gradient(transparent, #000 30%, #000 75%, transparent); }
